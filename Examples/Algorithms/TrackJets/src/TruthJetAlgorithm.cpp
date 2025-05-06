@@ -13,6 +13,8 @@
 #include "ActsExamples/EventData/SimParticle.hpp"
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
 #include "ActsFatras/EventData/ProcessType.hpp"
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
 
 #include <ostream>
 #include <stdexcept>
@@ -25,6 +27,8 @@ ActsExamples::TruthJetAlgorithm::TruthJetAlgorithm(const Config& cfg,
   }
 
   m_inputTruthParticles.initialize(m_cfg.inputTruthParticles);
+  m_outputJets.initialize(m_cfg.outputJets);
+  
 }
 
 ActsExamples::ProcessCode ActsExamples::TruthJetAlgorithm::execute(
@@ -33,18 +37,31 @@ ActsExamples::ProcessCode ActsExamples::TruthJetAlgorithm::execute(
 
   const auto& truthParticles = m_inputTruthParticles(ctx);
 
-  ACTS_INFO("event " << ctx.eventNumber << " collection '"
-                     << m_cfg.inputTruthParticles << "' contains "
-                     << truthParticles.size() << " truthParticles");
+  // Get the 4-momentum information from the simulated truth particles
+  // and create fastjet::PseudoJet objects
+  std::vector<fastjet::PseudoJet> inputParticles;
+  int particleIndex = -1;
   for (const auto& particle : truthParticles) {
-    ACTS_INFO("  particle " << particle);
-    ACTS_INFO("    process_type: " << particle.process());
-    ACTS_INFO("    position:     " << particle.position().transpose() / 1_mm
-                                   << " mm");
-    ACTS_INFO("    direction:    " << particle.direction().transpose());
-    ACTS_INFO("    time:         " << particle.time() / 1_ns << " ns");
-    ACTS_INFO("    |p|:          " << particle.absoluteMomentum() / 1_GeV
-                                   << " GeV");
-  }
+
+    particleIndex++;
+
+    fastjet::PseudoJet pseudoJet( particle.momentum().x(),
+                                  particle.momentum().y(),
+                                  particle.momentum().z(),
+                                  particle.energy() );
+    pseudoJet.set_user_index(particleIndex);
+    inputParticles.push_back(pseudoJet);
+
+    }
+
+    // Run the jet clustering
+    fastjet::ClusterSequence clusterSeq(inputParticles, DefaultJetDefinition);
+
+    // Get the jets above pT 20 GeV
+    std::vector<fastjet::PseudoJet> jets = clusterSeq.inclusive_jets(20 * Acts::UnitConstants::GeV);
+
+    // Store the jets in the output data handle
+    m_outputJets(ctx, std::move(jets));
+//   }
   return ProcessCode::SUCCESS;
 } 

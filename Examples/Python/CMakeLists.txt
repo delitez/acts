@@ -63,6 +63,7 @@ target_link_libraries(
         ActsExamplesPrinters
         ActsExamplesTrackFinding
         ActsExamplesTrackFitting
+        ActsExamplesTrackJets
         ActsExamplesVertexing
         ActsExamplesFatras
         ActsExamplesDetectorTelescope

@@ -13,6 +13,7 @@
 #include "ActsExamples/Framework/DataHandle.hpp"
 #include "ActsExamples/Framework/IAlgorithm.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
+#include "fastjet/ClusterSequence.hh"
 
 #include <string>
 
@@ -25,6 +26,9 @@ class TruthJetAlgorithm : public IAlgorithm {
   struct Config {
     /// Input particles collection.
     std::string inputTruthParticles;
+
+    /// Output jets collection.
+    std::string outputJets;
   };
 
   TruthJetAlgorithm(const Config& cfg, Acts::Logging::Level lvl);
@@ -37,7 +41,11 @@ class TruthJetAlgorithm : public IAlgorithm {
   Config m_cfg;
 
   ReadDataHandle<SimParticleContainer> m_inputTruthParticles{this, "InputTruthParticles"};
-};
+  WriteDataHandle<std::vector<fastjet::PseudoJet>> m_outputJets{this, "OutputJets"};
+
+    };
+
+const fastjet::JetDefinition DefaultJetDefinition = fastjet::JetDefinition(fastjet::antikt_algorithm, 0.4);
 
 }  // namespace ActsExamples
 
