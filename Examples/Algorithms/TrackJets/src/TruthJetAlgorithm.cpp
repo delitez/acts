@@ -15,53 +15,69 @@
 #include "ActsFatras/EventData/ProcessType.hpp"
 #include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
+#include <fastjet/ClusterSequence.hh>
+
 
 #include <ostream>
 #include <stdexcept>
 
-ActsExamples::TruthJetAlgorithm::TruthJetAlgorithm(const Config& cfg,
+namespace ActsExamples{
+
+TruthJetAlgorithm::TruthJetAlgorithm(const Config& cfg,
                                                  Acts::Logging::Level lvl)
     : IAlgorithm("TruthJetAlgorithm", lvl), m_cfg(cfg) {
   if (m_cfg.inputTruthParticles.empty()) {
     throw std::invalid_argument("Input particles collection is not configured");
   }
-
   m_inputTruthParticles.initialize(m_cfg.inputTruthParticles);
   m_outputJets.initialize(m_cfg.outputJets);
   
 }
 
-ActsExamples::ProcessCode ActsExamples::TruthJetAlgorithm::execute(
+ProcessCode ActsExamples::TruthJetAlgorithm::execute(
     const ActsExamples::AlgorithmContext& ctx) const {
-  using namespace Acts::UnitLiterals;
 
   const auto& truthParticles = m_inputTruthParticles(ctx);
 
+  ACTS_DEBUG("Number of truth particles: " << truthParticles.size());
+
   // Get the 4-momentum information from the simulated truth particles
   // and create fastjet::PseudoJet objects
-  std::vector<fastjet::PseudoJet> inputParticles;
-  int particleIndex = -1;
-  for (const auto& particle : truthParticles) {
+  std::vector<fastjet::PseudoJet> inputPseudoJets;
 
-    particleIndex++;
+  int particleIndex = 0;
+  for (const auto& particle : truthParticles) {
 
     fastjet::PseudoJet pseudoJet( particle.momentum().x(),
                                   particle.momentum().y(),
                                   particle.momentum().z(),
                                   particle.energy() );
+
+    ACTS_DEBUG("DEBUG: Jet momentum: " << particle.momentum().x() << ", "
+              << particle.momentum().y() << ", "
+              << particle.momentum().z() << ", "
+              << particle.energy());
     pseudoJet.set_user_index(particleIndex);
-    inputParticles.push_back(pseudoJet);
+    inputPseudoJets.push_back(pseudoJet);
+    particleIndex++;
 
     }
-
+    ACTS_DEBUG("Number of input pseudo jets: " << inputPseudoJets.size());
     // Run the jet clustering
-    fastjet::ClusterSequence clusterSeq(inputParticles, DefaultJetDefinition);
-
+    fastjet::ClusterSequence clusterSeq(inputPseudoJets, DefaultJetDefinition);
     // Get the jets above pT 20 GeV
-    std::vector<fastjet::PseudoJet> jets = clusterSeq.inclusive_jets(20 * Acts::UnitConstants::GeV);
-
+    std::vector<fastjet::PseudoJet> jets = sorted_by_pt(clusterSeq.inclusive_jets(10));
+    ACTS_DEBUG("Number of jets: " << jets.size());
     // Store the jets in the output data handle
     m_outputJets(ctx, std::move(jets));
-//   }
+
   return ProcessCode::SUCCESS;
-} 
+}
+
+ProcessCode ActsExamples::TruthJetAlgorithm::finalize() const {
+	ACTS_INFO(
+      "Finalizing truth jet clustering");
+	return ProcessCode::SUCCESS;
+}
+
+}; // namespace ActsExamples

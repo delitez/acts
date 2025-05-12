@@ -13,7 +13,7 @@
 #include "ActsExamples/Framework/DataHandle.hpp"
 #include "ActsExamples/Framework/IAlgorithm.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
-#include "fastjet/ClusterSequence.hh"
+
 
 #include <string>
 
@@ -34,14 +34,15 @@ class TruthJetAlgorithm : public IAlgorithm {
   TruthJetAlgorithm(const Config& cfg, Acts::Logging::Level lvl);
 
   ProcessCode execute(const AlgorithmContext& ctx) const override;
+  ProcessCode finalize() const;
 
   const Config& config() const { return m_cfg; }
 
  private:
   Config m_cfg;
 
-  ReadDataHandle<SimParticleContainer> m_inputTruthParticles{this, "InputTruthParticles"};
-  WriteDataHandle<std::vector<fastjet::PseudoJet>> m_outputJets{this, "OutputJets"};
+  ReadDataHandle<SimParticleContainer> m_inputTruthParticles{this, "inputTruthParticles"};
+  WriteDataHandle<std::vector<fastjet::PseudoJet>> m_outputJets{this, "outputJets"};
 
     };
 

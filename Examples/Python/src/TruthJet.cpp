@@ -6,16 +6,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#include "Acts/EventData/detail/CorrectedTransformationFreeToBound.hpp"
 #include "Acts/Plugins/Python/Utilities.hpp"
-#include "Acts/TrackFitting/BetheHeitlerApprox.hpp"
-#include "Acts/TrackFitting/GsfOptions.hpp"
 #include "Acts/Utilities/Logger.hpp"
-#include "ActsExamples/EventData/MeasurementCalibration.hpp"
-#include "ActsExamples/EventData/ScalingCalibrator.hpp"
-#include "ActsExamples/TrackFitting/RefittingAlgorithm.hpp"
-#include "ActsExamples/TrackFitting/TrackFitterFunction.hpp"
-#include "ActsExamples/TrackFitting/TrackFittingAlgorithm.hpp"
 #include "ActsExamples/TrackJets/TruthJetAlgorithm.hpp"
 
 #include <cstddef>
@@ -37,5 +29,6 @@ namespace Acts::Python {
       ACTS_PYTHON_DECLARE_ALGORITHM(
           ActsExamples::TruthJetAlgorithm, mex, "TruthJetAlgorithm",
           inputTruthParticles, outputJets);
-      }
-    }
+    } // addTruthJet
+} // namespace Acts::Python
+

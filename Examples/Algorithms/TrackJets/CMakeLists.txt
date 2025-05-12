@@ -10,7 +10,7 @@ target_include_directories(
 )
 target_link_libraries(
     ActsExamplesTrackJets
-    PUBLIC ActsCore ActsExamplesFramework ActsExamplesMagneticField
+    PUBLIC ActsCore ActsPluginFastJet ActsExamplesFramework
 )
 
 acts_compile_headers(ActsExamplesTrackJets GLOB "include/**/*.hpp")
