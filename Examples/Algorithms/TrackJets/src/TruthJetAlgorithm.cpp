@@ -13,10 +13,6 @@
 #include "ActsExamples/EventData/SimParticle.hpp"
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
 #include "ActsFatras/EventData/ProcessType.hpp"
-#include <fastjet/JetDefinition.hh>
-#include <fastjet/PseudoJet.hh>
-#include <fastjet/ClusterSequence.hh>
-
 
 #include <ostream>
 #include <stdexcept>
@@ -53,10 +49,6 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
                                   particle.momentum().z(),
                                   particle.energy() );
 
-    ACTS_DEBUG("DEBUG: Jet momentum: " << particle.momentum().x() << ", "
-              << particle.momentum().y() << ", "
-              << particle.momentum().z() << ", "
-              << particle.energy());
     pseudoJet.set_user_index(particleIndex);
     inputPseudoJets.push_back(pseudoJet);
     particleIndex++;
@@ -67,7 +59,50 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
     fastjet::ClusterSequence clusterSeq(inputPseudoJets, DefaultJetDefinition);
     // Get the jets above pT 20 GeV
     std::vector<fastjet::PseudoJet> jets = sorted_by_pt(clusterSeq.inclusive_jets(10));
-    ACTS_DEBUG("Number of jets: " << jets.size());
+
+    if(m_writeJetRootFile) {
+          // Write the jets to a ROOT file
+          std::unique_ptr<TFile> file( TFile::Open("jetKinematics.root", "RECREATE") );
+            if (!file || file->IsZombie()) { throw std::runtime_error("Failed to open file.root"); }
+          auto tree = std::make_unique<TTree>("tree", "Jet Tree");
+
+          std::vector<float> jetPx;
+          std::vector<float> jetPy;
+          std::vector<float> jetPz;
+          std::vector<float> jetPt;
+          std::vector<float> jetEta;
+          std::vector<float> jetPhi;
+          std::vector<float> jetE;
+          std::vector<float> jetMass;
+
+          tree->Branch("jetPx", &jetPx);
+          tree->Branch("jetPy", &jetPy);
+          tree->Branch("jetPz", &jetPz);
+          tree->Branch("jetPt", &jetPt);
+          tree->Branch("jetEta", &jetEta);
+          tree->Branch("jetPhi", &jetPhi);
+          tree->Branch("jetE", &jetE);
+          tree->Branch("jetMass", &jetMass);
+          
+
+          for(int i = 0; i < jets.size(); i++) {
+            ACTS_DEBUG("DEBUG: Jet momentum: " << jets[i].px() << ", "
+                      << jets[i].py() << ", "
+                      << jets[i].pz() << ", "
+                      << jets[i].E());
+            jetPt.push_back(jets[i].perp());
+            jetPx.push_back(jets[i].px());
+            jetPy.push_back(jets[i].py());
+            jetPz.push_back(jets[i].pz());
+            jetE.push_back(jets[i].E());
+            jetEta.push_back(jets[i].eta());
+            jetPhi.push_back(jets[i].phi());
+            jetMass.push_back(jets[i].m());
+          }
+
+          tree->Fill();
+          tree->Write();
+        }
     // Store the jets in the output data handle
     m_outputJets(ctx, std::move(jets));
 
@@ -79,5 +114,6 @@ ProcessCode ActsExamples::TruthJetAlgorithm::finalize() const {
       "Finalizing truth jet clustering");
 	return ProcessCode::SUCCESS;
 }
+
 
 }; // namespace ActsExamples

@@ -15,7 +15,7 @@ u = acts.UnitConstants
 rnd = acts.examples.RandomNumbers(seed=42)
 
 s = acts.examples.Sequencer(
-    events=1,
+    events=10,
     outputDir=outputDir
 )
 
@@ -41,7 +41,7 @@ addTruthJetAlg(
     inputTruthParticles = "particles_generated",
     outputJets = "output_jets"
         ),
-    loglevel=acts.logging.INFO
+    loglevel=acts.logging.DEBUG
 )
 
 s.run()

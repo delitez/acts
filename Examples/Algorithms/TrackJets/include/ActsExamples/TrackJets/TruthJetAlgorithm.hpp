@@ -14,6 +14,13 @@
 #include "ActsExamples/Framework/IAlgorithm.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
 
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
+#include <fastjet/ClusterSequence.hh>
+
+#include <TFile.h>
+#include <TTree.h>
+
 
 #include <string>
 
@@ -40,7 +47,7 @@ class TruthJetAlgorithm : public IAlgorithm {
 
  private:
   Config m_cfg;
-
+  bool m_writeJetRootFile = true;
   ReadDataHandle<SimParticleContainer> m_inputTruthParticles{this, "inputTruthParticles"};
   WriteDataHandle<std::vector<fastjet::PseudoJet>> m_outputJets{this, "outputJets"};
 
