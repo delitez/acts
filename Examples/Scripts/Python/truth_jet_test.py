@@ -19,7 +19,6 @@ s = acts.examples.Sequencer(
     outputDir=outputDir
 )
 
-
 addPythia8(
             s,
             hardProcess=["Top:qqbar2ttbar=on"],

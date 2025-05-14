@@ -47,7 +47,6 @@ class TruthJetAlgorithm : public IAlgorithm {
 
  private:
   Config m_cfg;
-  bool m_writeJetRootFile = true;
   ReadDataHandle<SimParticleContainer> m_inputTruthParticles{this, "inputTruthParticles"};
   WriteDataHandle<std::vector<fastjet::PseudoJet>> m_outputJets{this, "outputJets"};
 
