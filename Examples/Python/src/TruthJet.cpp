@@ -9,6 +9,7 @@
 #include "Acts/Plugins/Python/Utilities.hpp"
 #include "Acts/Utilities/Logger.hpp"
 #include "ActsExamples/TrackJets/TruthJetAlgorithm.hpp"
+#include "ActsExamples/TrackJets/TrackToTruthJetAlgorithm.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -29,5 +30,9 @@ void addTruthJet(Context& ctx) {
   ACTS_PYTHON_DECLARE_ALGORITHM(ActsExamples::TruthJetAlgorithm, mex,
                                 "TruthJetAlgorithm", inputTruthParticles,
                                 outputJets, jetPtMin);
+
+  ACTS_PYTHON_DECLARE_ALGORITHM(ActsExamples::TrackToTruthJetAlgorithm, mex,
+                                "TrackToTruthJetAlgorithm", inputTracks,
+                                inputJets, outputTrackJets);
 }  // addTruthJet
 }  // namespace Acts::Python
