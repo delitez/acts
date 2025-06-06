@@ -33,7 +33,7 @@ from acts.examples.reconstruction import (
 )
 
 s = acts.examples.Sequencer(
-        events=1, numThreads=-1, logLevel=acts.logging.INFO
+        events=100, numThreads=-1, logLevel=acts.logging.INFO
 )
 outputDir = "/Users/delitez/atlas/acts_v2/ci-dependencies/trackToTruth_output"
 
@@ -52,7 +52,7 @@ outputDir = Path(outputDir)
 addPythia8(
         s,
         nhard=1,
-        npileup=1,
+        npileup=50,
         hardProcess=["Top:qqbar2ttbar=on"],
         vtxGen=acts.examples.GaussianVertexGenerator(
             mean=acts.Vector4(0, 0, 0, 0),
@@ -122,46 +122,46 @@ s.addAlgorithm(
     )
 s.addWhiteboardAlias("tracks", "selected-tracks")
 
-s.addWriter(
-        acts.examples.RootTrackStatesWriter(
-            level=acts.logging.INFO,
-            inputTracks="tracks",
-            inputParticles="particles_selected",
-            inputTrackParticleMatching="track_particle_matching",
-            inputSimHits="simhits",
-            inputMeasurementSimHitsMap="measurement_simhits_map",
-            filePath=str(outputDir / "trackstates_kf.root"),
-        )
-    )
+# s.addWriter(
+#         acts.examples.RootTrackStatesWriter(
+#             level=acts.logging.INFO,
+#             inputTracks="tracks",
+#             inputParticles="particles_selected",
+#             inputTrackParticleMatching="track_particle_matching",
+#             inputSimHits="simhits",
+#             inputMeasurementSimHitsMap="measurement_simhits_map",
+#             filePath=str(outputDir / "trackstates_kf.root"),
+#         )
+#     )
 
-s.addWriter(
-        acts.examples.RootTrackSummaryWriter(
-            level=acts.logging.INFO,
-            inputTracks="tracks",
-            inputParticles="particles_selected",
-            inputTrackParticleMatching="track_particle_matching",
-            filePath=str(outputDir / "tracksummary_kf.root"),
-        )
-    )
+# s.addWriter(
+#         acts.examples.RootTrackSummaryWriter(
+#             level=acts.logging.INFO,
+#             inputTracks="tracks",
+#             inputParticles="particles_selected",
+#             inputTrackParticleMatching="track_particle_matching",
+#             filePath=str(outputDir / "tracksummary_kf.root"),
+#         )
+#     )
 
-s.addWriter(
-        acts.examples.TrackFitterPerformanceWriter(
-            level=acts.logging.INFO,
-            inputTracks="tracks",
-            inputParticles="particles_selected",
-            inputTrackParticleMatching="track_particle_matching",
-            filePath=str(outputDir / "performance_kf.root"),
-        )
-    )
+# s.addWriter(
+#         acts.examples.TrackFitterPerformanceWriter(
+#             level=acts.logging.INFO,
+#             inputTracks="tracks",
+#             inputParticles="particles_selected",
+#             inputTrackParticleMatching="track_particle_matching",
+#             filePath=str(outputDir / "performance_kf.root"),
+#         )
+#     )
 
 addTruthJetAlg(
     s,
     TruthJetConfig(
         inputTruthParticles="particles_generated_selected",
         outputJets="truth_jets",
-        jetPtMin=1 * u.GeV,
+        jetPtMin= 1 * u.GeV,
     ),
-    loglevel=acts.logging.DEBUG,
+    loglevel=acts.logging.INFO,
 )
 
 addTrackToTruthJetAlg(
@@ -172,7 +172,19 @@ addTrackToTruthJetAlg(
         outputTrackJets="track_jets",
         maxDeltaR=0.4
     ),
-    loglevel=acts.logging.DEBUG
+    loglevel=acts.logging.INFO
 )
+
+s.addWriter(
+    acts.examples.RootJetWriter(
+        level=acts.logging.DEBUG,
+        inputJets="truth_jets",
+        inputTracks="tracks",
+        inputTrackJets="track_jets",
+        field=acts.ConstantBField(acts.Vector3(0, 0, 2 * u.T)),
+        filePath=str(outputDir / "track_to_truth_jets.root"),
+    )
+)
+
 
 s.run()

@@ -25,6 +25,7 @@
 #include "ActsExamples/Utilities/Range.hpp"
 #include "ActsFatras/EventData/Barcode.hpp"
 
+
 #include <cmath>
 #include <ios>
 #include <limits>
@@ -36,6 +37,13 @@
 
 #include <TFile.h>
 #include <TTree.h>
+
+
+const Acts::MagneticFieldContext magFieldContext;
+
+Acts::MagneticFieldProvider::Cache magFieldCache() {
+  return Acts::NullBField{}.makeCache(magFieldContext );
+}
 
 namespace ActsExamples {
 
@@ -80,10 +88,11 @@ RootJetWriter::RootJetWriter(
     m_inputJets.initialize(m_cfg.inputJets);
     m_inputTracks.initialize(m_cfg.inputTracks);
     m_inputTrackJets.initialize(m_cfg.inputTrackJets);
+    
 
 
       //Setting up the ImpactPointEstimator
-  Acts::ImpactPointEstimator::Config ipEstCfg(field, m_propagator);
+  Acts::ImpactPointEstimator::Config ipEstCfg(m_cfg.field, m_propagator);
 
   m_ipEst = std::make_shared<Acts::ImpactPointEstimator>(ipEstCfg);
 
@@ -291,6 +300,18 @@ ACTS_DEBUG("RootWriter::Number of " << m_cfg.inputTrackJets << " " << trackJets.
       break;
     }
 
+Acts::Vector3 vertexPosition{0., 0., 0.};
+    Acts::Vector4 stddev;
+    stddev[Acts::ePos0] = 10 * Acts::UnitConstants::um;
+    stddev[Acts::ePos1] = 10 * Acts::UnitConstants::um;
+    stddev[Acts::ePos2] = 75 * Acts::UnitConstants::um;
+    stddev[Acts::eTime] = 1 * Acts::UnitConstants::ns;
+    Acts::SquareMatrix4 vertexCov = stddev.cwiseProduct(stddev).asDiagonal();
+
+//    Acts::Vertex ip_vtx(vertexPosition, vertexCov, tracks);
+
+
+  Acts::ImpactPointEstimator::State state{magFieldCache()};
 
 // Loop over the tracks
 for (size_t itrk = 0; itrk < tracks.size(); itrk++) {
@@ -317,30 +338,33 @@ for (size_t itrk = 0; itrk < tracks.size(); itrk++) {
     double covthetaqOverP= -999;
         
 
-    const auto trk_params = tracks.at(itrk);
+    const auto trk = tracks.at(itrk);
     // const auto hit_infos  = hitInfos[itrk];
-    const auto params     = trk_params.parameters();
+    const auto params     = trk.parameters();
+
+    auto boundParams = trk.createParametersAtReference();
+
 
 
     //Check if this track belongs to a jet and compute the IPs
     for (size_t ijet = 0; ijet<trackJets.size(); ++ijet) {
       std::vector<int> jtrks = trackJets[ijet].getTracks();
       
-      // ACTS_DEBUG("Jet " << ijet << " has " << jtrks.size() << " tracks associated");
       
       if (std::find(jtrks.begin(), jtrks.end(),itrk) != jtrks.end()) {
-
-        //ACTS_DEBUG("Track " << itrk << " is in jet " << ijet);
 
         Acts::Vector3 jetDir{jets[ijet].getFourMomentum()[0],
           trackJets[ijet].getFourMomentum()[1],
           trackJets[ijet].getFourMomentum()[2]};
-        
-        
-        // Acts::Result<Acts::ImpactParametersAndSigma> ipAndSigma = m_ipEst->estimate3DImpactParameters(tracks.at(itrk), reco_vertices[HS_idx], gctx_, mctx_);
-        
-        // Acts::Result<std::pair<double,double>> vszs = m_ipEst->getLifetimesSignOfTrack(tracks[itrk], reco_vertices[HS_idx],
+      
+        Acts::Result<Acts::ImpactParametersAndSigma> ipAndSigma = m_ipEst->estimate3DImpactParameters(gctx_, mctx_, boundParams, vertexPosition, state);
+
+
+        //auto vszs = m_ipEst->get3DLifetimeSignOfTrack(boundParams, vertexPosition, jetDir, gctx_, mctx_);
+       
+                // Acts::Result<std::pair<double,double>> vszs = m_ipEst->getLifetimesSignOfTrack(tracks[itrk], reco_vertices[HS_idx],
         //                                                                                jetDir, gctx_, mctx_);
+
         
         // if (!ipAndSigma.ok() || !vszs.ok())
         //   continue;
@@ -356,7 +380,7 @@ for (size_t itrk = 0; itrk < tracks.size(); itrk++) {
 
 // FIX: Still need to add vertex information to check covariances
 
-//const auto& cov  = *trk_params.covariance();
+//const auto& cov  = *trk.covariance();
       
       float trk_theta = params[Acts::eBoundTheta];
       float trk_eta   = std::atanh(std::cos(trk_theta));
@@ -507,3 +531,4 @@ void ActsExamples::RootJetWriter::Clear() {
 //   m_trk_numSCT  .clear();
 //   m_trk_numLSCT .clear();
 }
+
