@@ -18,6 +18,9 @@
 #include "ActsExamples/Framework/ProcessCode.hpp"
 #include "ActsExamples/Framework/WriterT.hpp"
 #include "ActsExamples/EventData/TrackJet.hpp"
+#include "Acts/EventData/TrackParameters.hpp"
+#include "Acts/Vertexing/TrackAtVertex.hpp"
+#include "Acts/MagneticField/NullBField.hpp"
 
 #include "Acts/EventData/MultiTrajectoryHelpers.hpp"
 #include "Acts/EventData/VectorMultiTrajectory.hpp"
@@ -78,6 +81,8 @@ class RootJetWriter final : public TrackJetWriter {
     std::string treeName = "events";
     /// file access mode.
     std::string fileMode = "RECREATE";
+    /// Magnetic field provider
+    std::shared_ptr<Acts::MagneticFieldProvider> field;
   };
 
   /// Constructor
@@ -196,11 +201,10 @@ class RootJetWriter final : public TrackJetWriter {
   //Tools
 
   std::shared_ptr<Propagator> m_propagator;
-  std::shared_ptr<Acts::MagneticFieldProvider> field;
   std::shared_ptr<Acts::ImpactPointEstimator> m_ipEst;
   
-//   Acts::GeometryContext gctx_;
-//   Acts::MagneticFieldContext mctx_;
+  Acts::GeometryContext gctx_;
+  Acts::MagneticFieldContext mctx_;
 
 };
 

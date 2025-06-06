@@ -213,7 +213,7 @@ void addRootOutput(Context& ctx) {
       nSimulatedEvents);
 
    ACTS_PYTHON_DECLARE_WRITER(
-      ActsExamples::RootJetWriter, mex, "RootJetWriter", inputJets, inputTracks, inputTrackJets,
+      ActsExamples::RootJetWriter, mex, "RootJetWriter", inputJets, inputTracks, inputTrackJets, field,
       //inputTrackParameters, inputTrajectories, recoVertices, inputProtoTracks, inputParticles, inputSimHits, 
       filePath, treeName, fileMode);
 }
