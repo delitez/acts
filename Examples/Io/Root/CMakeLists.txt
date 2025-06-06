@@ -1,6 +1,7 @@
 add_library(
     ActsExamplesIoRoot
     SHARED
+    src/RootJetWriter.cpp
     src/RootMeasurementWriter.cpp
     src/RootMaterialDecorator.cpp
     src/RootMaterialWriter.cpp

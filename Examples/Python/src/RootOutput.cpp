@@ -8,6 +8,7 @@
 
 #include "Acts/Plugins/Python/Utilities.hpp"
 #include "ActsExamples/Io/Root/RootBFieldWriter.hpp"
+#include "ActsExamples/Io/Root/RootJetWriter.hpp"
 #include "ActsExamples/Io/Root/RootMaterialTrackWriter.hpp"
 #include "ActsExamples/Io/Root/RootMaterialWriter.hpp"
 #include "ActsExamples/Io/Root/RootMeasurementWriter.hpp"
@@ -210,6 +211,11 @@ void addRootOutput(Context& ctx) {
       filePath, fileMode, interactionProbabilityBins, momentumBins,
       invariantMassBins, multiplicityMax, writeOptionalHistograms,
       nSimulatedEvents);
+
+   ACTS_PYTHON_DECLARE_WRITER(
+      ActsExamples::RootJetWriter, mex, "RootJetWriter", inputJets, inputTracks, inputTrackJets,
+      //inputTrackParameters, inputTrajectories, recoVertices, inputProtoTracks, inputParticles, inputSimHits, 
+      filePath, treeName, fileMode);
 }
 
 }  // namespace Acts::Python
