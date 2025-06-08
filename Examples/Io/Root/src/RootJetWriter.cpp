@@ -90,6 +90,8 @@ RootJetWriter::RootJetWriter(
     m_inputTrackJets.initialize(m_cfg.inputTrackJets);
     
 
+  Acts::EigenStepper<> stepper(m_cfg.field);
+  m_propagator = std::make_shared<Propagator>(stepper);
 
       //Setting up the ImpactPointEstimator
   Acts::ImpactPointEstimator::Config ipEstCfg(m_cfg.field, m_propagator);
@@ -158,10 +160,10 @@ RootJetWriter::RootJetWriter(
     m_outputTree->Branch("track_prob",       &m_tracks_prob);
     m_outputTree->Branch("track_d0",         &m_trk_d0);
     m_outputTree->Branch("track_z0",         &m_trk_z0);
-    // m_outputTree->Branch("track_signedd0",             &m_trk_signed_d0);
+     m_outputTree->Branch("track_signedd0",             &m_trk_signed_d0);
     // m_outputTree->Branch("track_signedd0sig",          &m_trk_signed_d0sig);
-    // m_outputTree->Branch("track_signedz0sinTheta",     &m_trk_signed_z0sinTheta);
-    // m_outputTree->Branch("track_signedz0sinThetasig",  &m_trk_signed_z0sinThetasig);
+     m_outputTree->Branch("track_signedz0sinTheta",     &m_trk_signed_z0sinTheta);
+    //m_outputTree->Branch("track_signedz0sinThetasig",  &m_trk_signed_z0sinThetasig);
     m_outputTree->Branch("track_eta",        &m_trk_eta);
     m_outputTree->Branch("track_theta",      &m_trk_theta);
     m_outputTree->Branch("track_phi",        &m_trk_phi);
@@ -301,14 +303,14 @@ ACTS_DEBUG("RootWriter::Number of " << m_cfg.inputTrackJets << " " << trackJets.
     }
 
 Acts::Vector3 vertexPosition{0., 0., 0.};
-    Acts::Vector4 stddev;
-    stddev[Acts::ePos0] = 10 * Acts::UnitConstants::um;
-    stddev[Acts::ePos1] = 10 * Acts::UnitConstants::um;
-    stddev[Acts::ePos2] = 75 * Acts::UnitConstants::um;
-    stddev[Acts::eTime] = 1 * Acts::UnitConstants::ns;
-    Acts::SquareMatrix4 vertexCov = stddev.cwiseProduct(stddev).asDiagonal();
+Acts::Vector4 stddev;
+stddev[Acts::ePos0] = 10 * Acts::UnitConstants::um;
+stddev[Acts::ePos1] = 10 * Acts::UnitConstants::um;
+stddev[Acts::ePos2] = 75 * Acts::UnitConstants::um;
+stddev[Acts::eTime] = 1 * Acts::UnitConstants::ns;
+Acts::SquareMatrix4 vertexCov = stddev.cwiseProduct(stddev).asDiagonal();
 
-//    Acts::Vertex ip_vtx(vertexPosition, vertexCov, tracks);
+Acts::Vertex ip_vtx(vertexPosition);
 
 
   Acts::ImpactPointEstimator::State state{magFieldCache()};
@@ -357,19 +359,21 @@ for (size_t itrk = 0; itrk < tracks.size(); itrk++) {
           trackJets[ijet].getFourMomentum()[1],
           trackJets[ijet].getFourMomentum()[2]};
       
-        Acts::Result<Acts::ImpactParametersAndSigma> ipAndSigma = m_ipEst->estimate3DImpactParameters(gctx_, mctx_, boundParams, vertexPosition, state);
+      auto ipAndSigma = m_ipEst->estimate3DImpactParameters(gctx_, mctx_, boundParams, vertexPosition, state);
+      auto vszs = m_ipEst->getLifetimeSignOfTrack(boundParams, ip_vtx, jetDir, gctx_, mctx_);
+      
+    
+        if (!ipAndSigma.ok() || !vszs.ok()) {
+          continue;
+        }
 
-
-        //auto vszs = m_ipEst->get3DLifetimeSignOfTrack(boundParams, vertexPosition, jetDir, gctx_, mctx_);
-       
-                // Acts::Result<std::pair<double,double>> vszs = m_ipEst->getLifetimesSignOfTrack(tracks[itrk], reco_vertices[HS_idx],
-        //                                                                                jetDir, gctx_, mctx_);
-
-        
-        // if (!ipAndSigma.ok() || !vszs.ok())
-        //   continue;
-
-        // //This is not unbiased!
+          signed_d0 = std::fabs((*ipAndSigma).parameters()(0))  * (*vszs).first;
+          auto z0 = std::fabs((*ipAndSigma).parameters()(1));
+          auto theta = (*ipAndSigma).theta();
+          signed_z0SinTheta = z0 * std::sin(theta) * (*vszs).second;
+          
+          
+        //This is not unbiased!
         // signed_d0             = std::fabs((*ipAndSigma).IPd0)  * (*vszs).first;
         // signed_z0SinTheta     = std::fabs((*ipAndSigma).IPz0SinTheta) * (*vszs).second;
         // signed_d0_err         = (*ipAndSigma).sigmad0;
@@ -393,9 +397,9 @@ for (size_t itrk = 0; itrk < tracks.size(); itrk++) {
       m_trk_z0.push_back(params[Acts::eBoundLoc1]);
       
       m_trk_signed_d0.push_back(signed_d0);
-      m_trk_signed_d0sig.push_back(signed_d0 / signed_d0_err);
+      //m_trk_signed_d0sig.push_back(signed_d0 / signed_d0_err);
       m_trk_signed_z0sinTheta.push_back(signed_z0SinTheta);
-      m_trk_signed_z0sinThetasig.push_back(signed_z0SinTheta / signed_z0SinTheta_err);
+      //m_trk_signed_z0sinThetasig.push_back(signed_z0SinTheta / signed_z0SinTheta_err);
 
       // m_trk_numPix1L.push_back(hit_infos.nPixInnermost);
       // m_trk_numPix2L.push_back(hit_infos.nPixNextToInnermost);
@@ -493,10 +497,10 @@ void ActsExamples::RootJetWriter::Clear() {
 //   m_tracks_prob.clear();        
 //   m_trk_d0.clear();             
 //   m_trk_z0.clear();
-//   m_trk_signed_d0.clear();
+  m_trk_signed_d0.clear();
 //   m_trk_signed_d0sig.clear();
-//   m_trk_signed_z0sinTheta.clear();
-//   m_trk_signed_z0sinThetasig.clear();
+  m_trk_signed_z0sinTheta.clear();
+//  m_trk_signed_z0sinThetasig.clear();
 //   m_trk_eta.clear();            
 //   m_trk_theta.clear();          
 //   m_trk_phi.clear();            
