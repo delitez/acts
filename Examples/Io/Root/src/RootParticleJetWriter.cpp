@@ -6,7 +6,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#include "ActsExamples/Io/Root/RootJetWriter.hpp"
+#include "ActsExamples/Io/Root/RootParticleJetWriter.hpp"
 
 #include "Acts/Definitions/Algebra.hpp"
 #include "Acts/Definitions/Common.hpp"
@@ -58,7 +58,7 @@ double calcSumPt2(const Acts::Vertex& vtx) {
 }
 }  // namespace
 
-Acts::MagneticFieldProvider::Cache magFieldCache() {
+Acts::MagneticFieldProvider::Cache magFieldCache_particle() {
   return Acts::NullBField{}.makeCache(magFieldContext);
 }
 
@@ -69,9 +69,9 @@ using Acts::VectorHelpers::perp;
 using Acts::VectorHelpers::phi;
 using Acts::VectorHelpers::theta;
 
-RootJetWriter::RootJetWriter(const RootJetWriter::Config& config,
+RootParticleJetWriter::RootParticleJetWriter(const RootParticleJetWriter::Config& config,
                              Acts::Logging::Level level)
-    : WriterT(config.inputTrackJets, "RootJetWriter", level), m_cfg(config) {
+    : WriterT(config.inputTrackJets, "RootParticleJetWriter", level), m_cfg(config) {
   if (m_cfg.inputTracks.empty()) {
     throw std::invalid_argument("Missing tracks input collection");
   }
@@ -216,7 +216,7 @@ RootJetWriter::RootJetWriter(const RootJetWriter::Config& config,
   m_outputTree->Branch("track_cov_tehtaqOverP", &m_trk_cov_thetaqOverP);
 }
 
-ProcessCode RootJetWriter::finalize() {
+ProcessCode RootParticleJetWriter::finalize() {
   m_outputFile->cd();
   m_outputTree->Write();
   m_outputFile->Close();
@@ -227,7 +227,7 @@ ProcessCode RootJetWriter::finalize() {
   return ProcessCode::SUCCESS;
 }
 
-ProcessCode RootJetWriter::writeT(const AlgorithmContext& ctx,
+ProcessCode RootParticleJetWriter::writeT(const AlgorithmContext& ctx,
                                   const TrackJetContainer& trackJets) {
   // Exclusive access to all the writing procedure
   std::lock_guard<std::mutex> lock(m_writeMutex);
@@ -281,7 +281,7 @@ ProcessCode RootJetWriter::writeT(const AlgorithmContext& ctx,
                << hsVtx->position().x() << ", " << hsVtx->position().y() << ", "
                << hsVtx->position().z() << ")");
 
-  Acts::ImpactPointEstimator::State state{magFieldCache()};
+  Acts::ImpactPointEstimator::State state{magFieldCache_particle()};
   std::vector<Acts::Vector4> secondaryVertices;
 
   std::map<std::size_t, std::vector<int>> secVerticesByJet;
@@ -725,7 +725,7 @@ ProcessCode RootJetWriter::writeT(const AlgorithmContext& ctx,
 
 }  // namespace ActsExamples
 
-void ActsExamples::RootJetWriter::clear() {
+void ActsExamples::RootParticleJetWriter::clear() {
   // Vertices
   m_recovtx_x.clear();
   m_recovtx_y.clear();
@@ -810,7 +810,7 @@ void ActsExamples::RootJetWriter::clear() {
   m_trk_cov_thetaqOverP.clear();
 }
 
-double ActsExamples::RootJetWriter::deltaR(
+double ActsExamples::RootParticleJetWriter::deltaR(
     TrackJet jet,
     Acts::TrackProxy<Acts::ConstVectorTrackContainer,
                      Acts::ConstVectorMultiTrajectory, std::shared_ptr, true>
@@ -843,7 +843,7 @@ double ActsExamples::RootJetWriter::deltaR(
   return deltaR;
 }
 
-double ActsExamples::RootJetWriter::correctedPhi(double phi1, double phi2) {
+double ActsExamples::RootParticleJetWriter::correctedPhi(double phi1, double phi2) {
   double dPhi = phi1 - phi2;
   if (dPhi < -std::numbers::pi) {
     dPhi += 2 * std::numbers::pi;
@@ -853,7 +853,7 @@ double ActsExamples::RootJetWriter::correctedPhi(double phi1, double phi2) {
   return dPhi;
 }
 
-double ActsExamples::RootJetWriter::correctedSinglePhi(double phi1) {
+double ActsExamples::RootParticleJetWriter::correctedSinglePhi(double phi1) {
   double dSPhi = phi1;
   if (dSPhi < -std::numbers::pi) {
     dSPhi += 2 * std::numbers::pi;

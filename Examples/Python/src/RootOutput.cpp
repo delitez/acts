@@ -15,6 +15,7 @@
 #include "ActsExamples/Io/Root/RootMeasurementWriter.hpp"
 #include "ActsExamples/Io/Root/RootNuclearInteractionParametersWriter.hpp"
 #include "ActsExamples/Io/Root/RootParticleWriter.hpp"
+#include "ActsExamples/Io/Root/RootParticleJetWriter.hpp"
 #include "ActsExamples/Io/Root/RootPropagationStepsWriter.hpp"
 #include "ActsExamples/Io/Root/RootPropagationSummaryWriter.hpp"
 #include "ActsExamples/Io/Root/RootSeedWriter.hpp"
@@ -229,6 +230,13 @@ void addRootOutput(Context& ctx) {
 
   ACTS_PYTHON_DECLARE_WRITER(
       ActsExamples::RootJetWriter, mex, "RootJetWriter", inputTracks,
+      inputTrackJets, inputVertices, inputTrackParticleMatching, inputParticles,
+      field, useOnlyBeamPipe,
+      // inputTrackParameters, inputTrajectories, recoVertices,
+      // inputProtoTracks, inputParticles, inputSimHits,
+      filePath, treeName, fileMode);
+
+  ACTS_PYTHON_DECLARE_WRITER(ActsExamples::RootParticleJetWriter, mex, "RootParticleJetWriter", inputTracks,
       inputTrackJets, inputVertices, inputTrackParticleMatching, inputParticles,
       field, useOnlyBeamPipe,
       // inputTrackParameters, inputTrajectories, recoVertices,
