@@ -614,6 +614,7 @@ ProcessCode RootJetWriter::writeT(const AlgorithmContext& ctx,
     Acts::Vector3 vtxjet_3mom{vtxjet_4mom[0], vtxjet_4mom[1], vtxjet_4mom[2]};
 
 
+
     double deltaR_jet_secvtx = -99.;
     double dPhi = -99.;
     double secVtxR = -99.;
