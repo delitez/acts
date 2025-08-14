@@ -398,13 +398,6 @@ ProcessCode RootJetWriter::writeT(const AlgorithmContext& ctx,
       double deltaR_track_particle =
           Acts::VectorHelpers::deltaR(trkMom, truthMom);
 
-      if (deltaR_track_particle > 0.4) {
-        ACTS_VERBOSE("Track " << itrk << " has deltaR " << deltaR_track_particle
-                            << " larger than maxDeltaR " << 0.4
-                            << ", skipping track");
-        continue;
-      }
-
       auto hs_it = std::ranges::find_if(
           secondaryVertices.begin(), secondaryVertices.end(),
           [&hsPosition](const Acts::Vector4& vtx) {
@@ -471,14 +464,6 @@ ProcessCode RootJetWriter::writeT(const AlgorithmContext& ctx,
             for (size_t v = 0; v < jet.getTracks().size(); ++v) {
               ACTS_DEBUG("Track indices:" << my_vec[v]);
               int track_idx = my_vec[v];
-              ACTS_DEBUG("Track d0 and z0 are: " << tracks.at(track_idx).parameters()[Acts::eBoundLoc0] << ", "
-                                                  << tracks.at(track_idx).parameters()[Acts::eBoundLoc1]);
-              ACTS_DEBUG("Track theta, eta, phi and pt are: " << tracks.at(track_idx).parameters()[Acts::eBoundTheta] << ", "
-                                                         << std::atanh(std::cos(tracks.at(track_idx).parameters()[Acts::eBoundTheta])) << ", "
-                                                         << tracks.at(track_idx).parameters()[Acts::eBoundPhi] << ", "
-                                                         << (std::abs(1.0 / tracks.at(track_idx).parameters()[Acts::eBoundQOverP]) * std::sin(tracks.at(track_idx).parameters()[Acts::eBoundTheta]))
-                                                        );
-
               ACTS_DEBUG("Track z0, d0, theta, id: " << tracks.at(track_idx).parameters()[Acts::eBoundLoc1] << ", "
                                                        << tracks.at(track_idx).parameters()[Acts::eBoundLoc0] << ", "
                                                        << tracks.at(track_idx).parameters()[Acts::eBoundTheta] << ", "
@@ -587,6 +572,7 @@ ProcessCode RootJetWriter::writeT(const AlgorithmContext& ctx,
     auto vtxjet = trackJets.at(ijet);
     Acts::Vector4 vtxjet_4mom = vtxjet.getFourMomentum();
     Acts::Vector3 vtxjet_3mom{vtxjet_4mom[0], vtxjet_4mom[1], vtxjet_4mom[2]};
+
 
     double deltaR_jet_secvtx = -99.;
     double dPhi = -99.;
