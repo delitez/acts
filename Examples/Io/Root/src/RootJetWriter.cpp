@@ -454,7 +454,7 @@ ProcessCode RootJetWriter::writeT(const AlgorithmContext& ctx,
                      << hsPosition[Acts::ePos2] << ")");
       }
 
-      if(jet.getLabel() == JetLabel::LightJet) {
+  if(jet.getLabel() == JetLabel::LightJet) {
             ACTS_DEBUG("Light jet found with " << secVerticesByJet[ijet].size()
                         << " secondary vertices.");
             ACTS_DEBUG("Jet hadron label is: " << jet.getLabelHadron());
@@ -462,9 +462,8 @@ ProcessCode RootJetWriter::writeT(const AlgorithmContext& ctx,
             ACTS_DEBUG("Number of tracks belong to this jet: " << jet.getTracks().size());
             auto *my_vec = jet.getTracks().data();
             for (size_t v = 0; v < jet.getTracks().size(); ++v) {
-              ACTS_DEBUG("Track indices:" << my_vec[v]);
               int track_idx = my_vec[v];
-              ACTS_DEBUG("Track z0, d0, theta, id: " << tracks.at(track_idx).parameters()[Acts::eBoundLoc1] << ", "
+              ACTS_DEBUG("Track " << track_idx << " z0, d0, theta, id: " << tracks.at(track_idx).parameters()[Acts::eBoundLoc1] << ", "
                                                        << tracks.at(track_idx).parameters()[Acts::eBoundLoc0] << ", "
                                                        << tracks.at(track_idx).parameters()[Acts::eBoundTheta] << ", "
                                                        << track_idx);
@@ -494,6 +493,47 @@ ProcessCode RootJetWriter::writeT(const AlgorithmContext& ctx,
             ACTS_DEBUG("The track momentum transverse momentum is: ("
                         << dbg_trk_pt << ")");
           }
+
+      if(jet.getLabel() == JetLabel::BJet) {
+            ACTS_DEBUG("B jet found with " << secVerticesByJet[ijet].size()
+                        << " secondary vertices.");
+            ACTS_DEBUG("Jet hadron label is: " << jet.getLabelHadron());
+            ACTS_DEBUG("The secvtx Lxy is: " << secVtx_hs_Lxy);
+            ACTS_DEBUG("Number of tracks belong to this jet: " << jet.getTracks().size());
+            auto *my_vec = jet.getTracks().data();
+            for (size_t v = 0; v < jet.getTracks().size(); ++v) {
+              int track_idx = my_vec[v];
+              ACTS_DEBUG("Track " << track_idx << " z0, d0, theta, id: " << tracks.at(track_idx).parameters()[Acts::eBoundLoc1] << ", "
+                                                       << tracks.at(track_idx).parameters()[Acts::eBoundLoc0] << ", "
+                                                       << tracks.at(track_idx).parameters()[Acts::eBoundTheta] << ", "
+                                                       << track_idx);
+            }
+            ACTS_DEBUG("Matched track " << itrk << " with particle " << initParticle.pdg());
+            ACTS_DEBUG("The initial particle position is: ("
+                        << initParticlePosition[Acts::ePos0] << ", "
+                        << initParticlePosition[Acts::ePos1] << ", "
+                        << initParticlePosition[Acts::ePos2] << ")");
+            ACTS_DEBUG("The particle momentum is: ("
+                        << truthMom[Acts::eMom0] << ", "
+                        << truthMom[Acts::eMom1] << ", "
+                        << truthMom[Acts::eMom2] << ")");
+            // For debug reasons!
+            float dbg_trk_theta = params[Acts::eBoundTheta];
+            float dbg_trk_eta = std::atanh(std::cos(dbg_trk_theta));
+            float dbg_trk_qop = params[Acts::eBoundQOverP];
+            float dbg_trk_p = std::abs(1.0 / dbg_trk_qop);
+            float dbg_trk_pt = dbg_trk_p * std::sin(dbg_trk_theta);
+            ACTS_DEBUG("The track d0 and z0 are: ("
+                        << params[Acts::eBoundLoc0] << ", "
+                        << params[Acts::eBoundLoc1] << ")");
+            ACTS_DEBUG("The track theta, eta, phi are: ("
+                        << dbg_trk_theta << ", "
+                        << dbg_trk_eta << ", "
+                        << params[Acts::eBoundPhi] << ")");
+            ACTS_DEBUG("The track momentum transverse momentum is: ("
+                        << dbg_trk_pt << ")");
+          }
+
       m_jet_track_deltaR_all.push_back(deltaR_all);
       float trk_theta = params[Acts::eBoundTheta];
       float trk_eta = std::atanh(std::cos(trk_theta));
