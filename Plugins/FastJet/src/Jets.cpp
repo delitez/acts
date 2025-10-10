@@ -9,17 +9,6 @@
 #include "Acts/Plugins/FastJet/Jets.hpp"
 
 namespace Acts::FastJet {
-
-TrackJetBuilder TrackJetBuilder::create(std::vector<fastjet::PseudoJet>& tracks,
-                                        const fastjet::JetDefinition& jetDef) {
-  fastjet::ClusterSequence cs(tracks, jetDef);
-  return TrackJetBuilder(cs);
-}
-
-std::vector<fastjet::PseudoJet> TrackJetBuilder::jets(float ptMin,
-                                                      float etaMax) {
-  fastjet::Selector sel_eta = fastjet::SelectorAbsEtaMax(etaMax);
-  return sel_eta(m_clusterSeq.inclusive_jets(ptMin));
-}
+// template <typename TrackContainer>
 
 }  // namespace Acts::FastJet
