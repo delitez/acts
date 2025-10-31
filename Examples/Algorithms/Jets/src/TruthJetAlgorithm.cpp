@@ -8,14 +8,24 @@
 
 #include "ActsExamples/Jets/TruthJetAlgorithm.hpp"
 
+#include "Acts/Definitions/ParticleData.hpp"
+#include "Acts/Definitions/PdgParticle.hpp"
 #include "Acts/Definitions/Units.hpp"
 #include "Acts/Utilities/Logger.hpp"
+#include "Acts/Utilities/ScopedTimer.hpp"
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
 #include "ActsFatras/EventData/ProcessType.hpp"
 
+#include <algorithm>
+#include <mutex>
 #include <ostream>
+#include <ranges>
 #include <stdexcept>
 
+#include <HepMC3/GenEvent.h>
+#include <HepMC3/GenParticle.h>
+#include <HepMC3/Print.h>
+#include <boost/container/flat_map.hpp>
 #include <fastjet/ClusterSequence.hh>
 #include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
@@ -29,8 +39,37 @@ TruthJetAlgorithm::TruthJetAlgorithm(const Config& cfg,
     throw std::invalid_argument("Input particles collection is not configured");
   }
   m_inputTruthParticles.initialize(m_cfg.inputTruthParticles);
+  if (m_cfg.doJetLabeling && !m_cfg.inputHepMC3Event.has_value()) {
+    throw std::invalid_argument("Input HepMC3 event is not configured");
+  }
+  m_inputHepMC3Event.initialize(m_cfg.inputHepMC3Event.value());
   m_outputJets.initialize(m_cfg.outputJets);
 }
+
+namespace {
+ActsPlugins::FastJet::JetLabel jetLabelFromHadronType(
+    Acts::HadronType hadronType) {
+  using enum Acts::HadronType;
+  switch (hadronType) {
+    case BBbarMeson:
+    case BottomMeson:
+    case BottomBaryon:
+      return ActsPlugins::FastJet::JetLabel::BJet;
+    case CCbarMeson:
+    case CharmedMeson:
+    case CharmedBaryon:
+      return ActsPlugins::FastJet::JetLabel::CJet;
+    case StrangeMeson:
+    case StrangeBaryon:
+    case LightMeson:
+    case LightBaryon:
+      return ActsPlugins::FastJet::JetLabel::LightJet;
+    default:
+      return ActsPlugins::FastJet::JetLabel::Unknown;
+  }
+}
+
+}  // namespace
 
 ProcessCode ActsExamples::TruthJetAlgorithm::execute(
     const ActsExamples::AlgorithmContext& ctx) const {
