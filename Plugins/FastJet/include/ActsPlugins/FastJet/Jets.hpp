@@ -19,22 +19,57 @@
 #include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
 
+namespace HepMC3 {
+class GenParticle;
+}
+
 namespace ActsPlugins::FastJet {
+
+enum class JetLabel { Unknown = -99, LightJet = 0, CJet = 4, BJet = 5 };
+
+inline std::ostream& operator<<(std::ostream& os, const JetLabel& label) {
+  switch (label) {
+    case JetLabel::Unknown:
+      os << "Unknown";
+      break;
+    case JetLabel::LightJet:
+      os << "LightJet";
+      break;
+    case JetLabel::CJet:
+      os << "CJet";
+      break;
+    case JetLabel::BJet:
+      os << "BJet";
+      break;
+  }
+  return os;
+}
 
 /// Common class for jets
 class Jet {
  public:
   explicit Jet(const Acts::Vector4& fourMom) : m_fourMomentum{fourMom} {}
+  Jet(const Acts::Vector4& fourMom, const JetLabel& label)
+      : m_fourMomentum{fourMom}, m_jetLabel{label} {}
 
   /// @brief Get the jet 4-momentum
   /// @return the jet 4-momentum as an Acts::Vector4
   Acts::Vector4 fourMomentum() const { return m_fourMomentum; }
+  JetLabel jetLabel() const { return m_jetLabel; }
+  const HepMC3::GenParticle* hadronLabel() const { return m_hadronLabel; }
+  void setJetLabel(const JetLabel& label) { m_jetLabel = label; }
+  void setHadronLabel(const HepMC3::GenParticle* hadron) {
+    m_hadronLabel = hadron;
+  }
 
  private:
   Acts::Vector4 m_fourMomentum{Acts::Vector4::Zero()};
+  JetLabel m_jetLabel{JetLabel::Unknown};
+  const HepMC3::GenParticle* m_hadronLabel{nullptr};
   /// @brief Print the jet information
   friend std::ostream& operator<<(std::ostream& os, const Jet& jet) {
     os << "Jet 4-momentum: " << jet.fourMomentum().transpose() << std::endl;
+    os << "Jet label: " << jet.m_jetLabel << std::endl;
     return os;
   }
 };
