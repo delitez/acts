@@ -5,7 +5,12 @@ target_include_directories(
 )
 target_link_libraries(
     ActsExamplesJets
-    PUBLIC Acts::Fatras Acts::PluginFastJet Acts::ExamplesFramework
+    PUBLIC
+        Acts::Fatras
+        Acts::PluginFastJet
+        Acts::ExamplesFramework
+        Acts::ExamplesIoHepMC3
+        HepMC3::HepMC3
 )
 
 acts_compile_headers(ExamplesJets GLOB "include/**/*.hpp")

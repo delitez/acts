@@ -14,6 +14,7 @@
 #include "ActsExamples/Framework/DataHandle.hpp"
 #include "ActsExamples/Framework/IAlgorithm.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
+#include "ActsExamples/Io/HepMC3/HepMC3Util.hpp"
 #include "ActsPlugins/FastJet/Jets.hpp"
 
 #include <string>
@@ -23,7 +24,7 @@ class PseudoJet;
 }
 
 namespace HepMC3 {
-  class GenEvent;
+class GenEvent;
 }
 
 namespace ActsExamples {
