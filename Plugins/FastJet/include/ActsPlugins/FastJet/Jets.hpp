@@ -48,7 +48,6 @@ inline std::ostream& operator<<(std::ostream& os, const JetLabel& label) {
 /// Common class for jets
 class Jet {
  public:
-  explicit Jet(const Acts::Vector4& fourMom) : m_fourMomentum{fourMom} {}
   Jet(const Acts::Vector4& fourMom, const JetLabel& label)
       : m_fourMomentum{fourMom}, m_jetLabel{label} {}
 
@@ -77,7 +76,7 @@ class Jet {
 template <typename TrackContainer>
 class TruthJet : public Jet {
  public:
-  explicit TruthJet(const Acts::Vector4& fourMom) : Jet(fourMom) {}
+  TruthJet(const Acts::Vector4& fourMom, const JetLabel& label) : Jet(fourMom, label) {}
 
   /// @brief Set the truth particles as constituents of this truth jet from its barcode
   void setConstituents(const std::vector<ActsFatras::Barcode>& constituents) {
@@ -87,6 +86,10 @@ class TruthJet : public Jet {
   /// @brief Get the truth particles that are truth jet constituents
   const std::vector<ActsFatras::Barcode>& constituents() const {
     return m_constituents;
+  }
+
+  void setConstituentIndices(const std::vector<int>& indices) {
+    m_constituentIndices = indices;
   }
 
   /// @brief Set the tracks associated to this truth jet
@@ -105,6 +108,8 @@ class TruthJet : public Jet {
  private:
   /// @brief  Truth particles as the constituents of the truth jet
   std::vector<ActsFatras::Barcode> m_constituents;
+  /// @brief Indices of the constituents in the input collection
+  std::vector<int> m_constituentIndices;
   /// @brief The tracks associated to this truth jet
   std::vector<typename TrackContainer::TrackProxy> m_associatedTracks;
 };
@@ -112,7 +117,7 @@ class TruthJet : public Jet {
 template <typename TrackContainer>
 class TrackJet : public Jet {
  public:
-  explicit TrackJet(const Acts::Vector4& fourMom) : Jet(fourMom) {}
+  TrackJet(const Acts::Vector4& fourMom, const JetLabel& label) : Jet(fourMom, label) {}
 
   /// @brief Set the tracks as constituents of this track jet
   void setConstituents(
