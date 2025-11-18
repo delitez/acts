@@ -14,7 +14,7 @@
 #include "ActsExamples/Framework/DataHandle.hpp"
 #include "ActsExamples/Framework/IAlgorithm.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
-#include "ActsExamples/Io/HepMC3/HepMC3Util.hpp"
+#include "ActsExamples/Io/EDM4hep/EDM4hepUtil.hpp"
 #include "ActsPlugins/FastJet/Jets.hpp"
 
 #include <string>
@@ -23,9 +23,11 @@ namespace fastjet {
 class PseudoJet;
 }
 
-namespace HepMC3 {
-class GenEvent;
-}
+namespace edm4hep {
+class MCParticle;
+class MutableMCParticle;
+class MCParticleCollection;
+}  // namespace edm4hep
 
 namespace ActsExamples {
 struct AlgorithmContext;
@@ -46,8 +48,8 @@ class TruthJetAlgorithm final : public IAlgorithm {
     double jetClusteringRadius = 0.4;
     /// Only cluster HS particles
     bool clusterHSParticlesOnly = true;
-    /// input HepMC3 event
-    std::optional<std::string> inputHepMC3Event;
+    /// input EDM4Hep event
+    std::string inputEDM4HepParticles;
     /// Do jet labeling
     bool doJetLabeling = true;
     /// Delta R for labeling
@@ -72,8 +74,8 @@ class TruthJetAlgorithm final : public IAlgorithm {
   Config m_cfg;
   ReadDataHandle<SimParticleContainer> m_inputTruthParticles{
       this, "inputTruthParticles"};
-  ReadDataHandle<std::shared_ptr<HepMC3::GenEvent>> m_inputHepMC3Event{
-      this, "inputHepMC3Event"};
+  ReadDataHandle<std::shared_ptr<edm4hep::MCParticleCollection>>
+      m_inputEDM4HepParticles{this, "inputEDM4HepParticles"};
   WriteDataHandle<std::vector<ActsPlugins::FastJet::TruthJet<TrackContainer>>>
       m_outputJets{this, "outputJets"};
 
