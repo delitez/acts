@@ -38,7 +38,7 @@ from acts.examples.edm4hep import (
     PodioReader,
 )
 
-s = acts.examples.Sequencer(events=1, numThreads=1, logLevel=acts.logging.INFO)
+s = acts.examples.Sequencer(events=10, numThreads=1, logLevel=acts.logging.INFO)
 outputDir = "/Users/delitez/atlas/acts-spack/ci-dependencies/jetAlg_output"
 
 from acts.examples.odd import getOpenDataDetector
@@ -54,51 +54,73 @@ rnd = acts.examples.RandomNumbers(seed=42)
 outputDir = Path(outputDir)
 out = outputDir / "particles_edm4hep.root"
 
-addPythia8(
-    s,
-    nhard=1,
-    npileup=1,
-    hardProcess=["Top:qqbar2ttbar=on"],
-    vtxGen=acts.examples.GaussianVertexGenerator(
-        mean=acts.Vector4(0, 0, 0, 0),
-        stddev=acts.Vector4(0.0125 * u.mm, 0.0125 * u.mm, 55.5 * u.mm, 5.0 * u.ns),
-    ),
-    rnd=rnd,
-    outputDirRoot=outputDir,
-    outputDirCsv=outputDir,
-    writeHepMC3=outputDir,
-)
+addParticleGun(
+            s,
+            MomentumConfig(
+                0 * u.GeV,
+                10 * u.GeV,
+                transverse=True,
+            ),
+            EtaConfig(-2.5, 2.5),
+            PhiConfig(0.0, 360.0 * u.degree),
+            ParticleConfig(
+                1, acts.PdgParticle.eB0, randomizeCharge=True
+            ),
+            vtxGen=acts.examples.GaussianVertexGenerator(
+                mean=acts.Vector4(0, 0, 0, 0),
+                stddev=acts.Vector4(
+                    0.0125 * u.mm, 0.0125 * u.mm, 55.5 * u.mm, 1.0 * u.ns
+                ),
+            ),
+            multiplicity=1,
+            rnd=rnd,
+        )
 
-addFatras(
-    s,
-    trackingGeometry,
-    field,
-    rnd=rnd,
-    enableInteractions=True,
-)
+# addPythia8(
+#     s,
+#     nhard=1,
+#     npileup=1,
+#     hardProcess=["Top:qqbar2ttbar=on"],
+#     vtxGen=acts.examples.GaussianVertexGenerator(
+#         mean=acts.Vector4(0, 0, 0, 0),
+#         stddev=acts.Vector4(0.0125 * u.mm, 0.0125 * u.mm, 55.5 * u.mm, 5.0 * u.ns),
+#     ),
+#     rnd=rnd,
+#     outputDirRoot=outputDir,
+#     outputDirCsv=outputDir,
+#     # writeHepMC3=outputDir,
+# )
+
+# addFatras(
+#     s,
+#     trackingGeometry,
+#     field,
+#     rnd=rnd,
+#     enableInteractions=True,
+# )
 
 
-addDigitization(
-    s,
-    trackingGeometry,
-    field,
-    digiConfigFile=digiConfigFile,
-    rnd=rnd,
-)
+# addDigitization(
+#     s,
+#     trackingGeometry,
+#     field,
+#     digiConfigFile=digiConfigFile,
+#     rnd=rnd,
+# )
 
-addDigiParticleSelection(
-    s,
-    ParticleSelectorConfig(
-        pt=(0.9 * u.GeV, None),
-        measurements=(7, None),
-        removeNeutral=True,
-        removeSecondaries=True,
-    ),
-)
+# addDigiParticleSelection(
+#     s,
+#     ParticleSelectorConfig(
+#         pt=(0.9 * u.GeV, None),
+#         measurements=(7, None),
+#         removeNeutral=True,
+#         removeSecondaries=True,
+#     ),
+# )
 
 edm4hepParticleConverter = EDM4hepParticleOutputConverter(
     acts.logging.INFO,
-    inputParticles="particles_generated_selected",
+    inputParticles="particles",
     outputParticles="MCParticles",
 )
 
@@ -114,50 +136,50 @@ s.addWriter(
     )
 )
 
-s.addReader(
-    PodioReader(
-        level=acts.logging.DEBUG,
-        inputPath=str(out),
-        outputFrame="events",
-        category="events",
-    )
-)
+# s.addReader(
+#     PodioReader(
+#         level=acts.logging.DEBUG,
+#         inputPath=str(out),
+#         outputFrame="events",
+#         category="events",
+#     )
+# )
 
-edm4hepReader = acts.examples.edm4hep.EDM4hepSimInputConverter(
-    inputFrame="events",
-    inputSimHits=[
-        "PixelBarrelReadout",
-        "PixelEndcapReadout",
-        "ShortStripBarrelReadout",
-        "ShortStripEndcapReadout",
-        "LongStripBarrelReadout",
-        "LongStripEndcapReadout",
-    ],
-    outputParticlesGenerator="particles_generated",
-    outputParticlesSimulation="particles_simulated",
-    outputSimHits="simhits",
-    outputSimVertices="vertices_truth",
-    dd4hepDetector=detector,
-    trackingGeometry=trackingGeometry,
-    sortSimHitsInTime=False,
-    particleRMax=1080 * u.mm,
-    particleZ=(-3030 * u.mm, 3030 * u.mm),
-    particlePtMin=150 * u.MeV,
-    level=acts.logging.DEBUG,
-)
-s.addAlgorithm(edm4hepReader)
+# edm4hepReader = acts.examples.edm4hep.EDM4hepSimInputConverter(
+#     inputFrame="events",
+#     inputSimHits=[
+#         "PixelBarrelReadout",
+#         "PixelEndcapReadout",
+#         "ShortStripBarrelReadout",
+#         "ShortStripEndcapReadout",
+#         "LongStripBarrelReadout",
+#         "LongStripEndcapReadout",
+#     ],
+#     outputParticlesGenerator="particles_generated",
+#     outputParticlesSimulation="particles_simulated",
+#     outputSimHits="simhits",
+#     outputSimVertices="vertices_truth",
+#     dd4hepDetector=detector,
+#     trackingGeometry=trackingGeometry,
+#     sortSimHitsInTime=False,
+#     particleRMax=1080 * u.mm,
+#     particleZ=(-3030 * u.mm, 3030 * u.mm),
+#     particlePtMin=150 * u.MeV,
+#     level=acts.logging.DEBUG,
+# )
+# s.addAlgorithm(edm4hepReader)
 
-s.addWhiteboardAlias("particles", edm4hepReader.config.outputParticlesSimulation)
+# s.addWhiteboardAlias("particles", edm4hepReader.config.outputParticlesSimulation)
 
-addSimParticleSelection(
-    s,
-    ParticleSelectorConfig(
-        rho=(0.0, 24 * u.mm),
-        absZ=(0.0, 1.0 * u.m),
-        eta=(-3.0, 3.0),
-        removeNeutral=True,
-    ),
-)
+# addSimParticleSelection(
+#     s,
+#     ParticleSelectorConfig(
+#         rho=(0.0, 24 * u.mm),
+#         absZ=(0.0, 1.0 * u.m),
+#         eta=(-3.0, 3.0),
+#         removeNeutral=True,
+#     ),
+# )
 
 
 s.run()
