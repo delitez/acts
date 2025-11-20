@@ -74,7 +74,7 @@ class TruthJetAlgorithm final : public IAlgorithm {
   Config m_cfg;
   ReadDataHandle<SimParticleContainer> m_inputTruthParticles{
       this, "inputTruthParticles"};
-  ReadDataHandle<std::shared_ptr<edm4hep::MCParticleCollection>>
+  ReadDataHandle<std::unique_ptr<podio::CollectionBase>>
       m_inputEDM4HepParticles{this, "inputEDM4HepParticles"};
   WriteDataHandle<std::vector<ActsPlugins::FastJet::TruthJet<TrackContainer>>>
       m_outputJets{this, "outputJets"};

@@ -26,6 +26,7 @@
 #include <boost/container/flat_map.hpp>
 #include <edm4hep/MCParticle.h>
 #include <edm4hep/MCParticleCollection.h>
+#include <podio/CollectionBase.h>
 #include <fastjet/ClusterSequence.hh>
 #include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
@@ -143,11 +144,10 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
       edm4hep::MutableMCParticle edm4hepParticle;
       EDM4hepUtil::writeParticle(*particle, edm4hepParticle);
 
-      // TO-DO
-      //  if (m_cfg.clusterHSParticlesOnly && gp != nullptr &&
-      //  HepMC3Util::eventGeneratorIndex(*gp) != 0){
-      //    continue;
-      //  }
+      if (m_cfg.clusterHSParticlesOnly &&
+          edm4hepParticle.getGeneratorStatus() != 0) {
+        continue;
+      }
 
       fastjet::PseudoJet pseudoJet(
           particle->momentum().x(), particle->momentum().y(),
@@ -197,83 +197,165 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
     ACTS_DEBUG("Number of clustered jets: " << jets.size());
   }
   // TO-DO
+  std::vector<std::pair<ActsPlugins::FastJet::JetLabel, std::shared_ptr<const edm4hep::MCParticle>>> hadrons;
   // std::vector<std::pair<ActsPlugins::FastJet::JetLabel, std::shared_ptr<const
-  // HepMC3::GenParticle>>> hadrons; if(m_cfg.doJetLabeling) {
-  //   Acts::ScopedTimer timer("hadron finding", logger(),
-  //   Acts::Logging::DEBUG); ACTS_DEBUG("Jet labeling is enabled. Finding
-  //   hadrons for jet labeling.");
+  // HepMC3::GenParticle>>> hadrons; 
+  if(m_cfg.doJetLabeling) {
+    // Acts::ScopedTimer timer("hadron finding", logger(),
+    // Acts::Logging::DEBUG); ACTS_DEBUG("Jet labeling is enabled. Finding
+    // hadrons for jet labeling.");
 
-  //   // const auto& genEvent = *m_inputHepMC3Event(ctx);
-  //   const auto& edm4hepParticles = m_inputEDM4HepParticles(ctx);
+    // const auto& genEvent = *m_inputHepMC3Event(ctx);
+    //edm4hep::MCParticleCollection edm4hepParticles = *m_inputEDM4HepParticles(ctx);
 
-  //   // A lazy view over the generated particles for hadron finding
-  //   auto hadronView =
-  //     genEvent.particles() | std::views::filter([this](const auto& particle)
-  //     {
-  //       if(m_cfg.jetLabelingHSHadronsOnly) {
-  //         if (HepMC3Util::eventGeneratorIndex(*particle) != 0) {
-  //           return false;
-  //         }
-  //       }
+    // Retrieve EDM4HEP particles for hadron finding
+    podio::CollectionBase const* collectionBase = m_inputEDM4HepParticles(ctx).get();
+    auto edm4hepParticles =
+        dynamic_cast<edm4hep::MCParticleCollection const*>(collectionBase);
+    if (!edm4hepParticles) {
+      throw std::runtime_error(
+          "Failed to cast CollectionBase to MCParticleCollection");
+    }
 
-  //       Acts::PdgParticle pdgId{particle->pdg_id()};
-  //       if (!Acts::ParticleIdHelper::isHadron(pdgId)) {
-  //         return false;
-  //       }
+    // for (const auto& particle : *edm4hepParticles) {
+    //   ACTS_DEBUG("Processing EDM4HEP particle with PDG ID: "
+    //              << static_cast<int>(particle.getPDG())
+    //             << " and generator status: " << particle.getGeneratorStatus());
 
-  //       if (particle->status() != HepMC3Util::kDecayedParticleStatus &&
-  //           particle->status() != HepMC3Util::kUndecayedParticleStatus) {
-  //         return false;
-  //       }
+    //   if (m_cfg.jetLabelingHSHadronsOnly) {
+    //     if (particle.getGeneratorStatus() != 0) {
+    //       ACTS_DEBUG("Skipping particle not from hard scatter.");
+    //       continue;
+    //     }
+    //   }
 
-  //       // Apply a pt cut on B or C hadrons
-  //       auto label = jetLabelFromHadronType(
-  //           Acts::ParticleIdHelper::hadronType(pdgId));
-  //       using enum ActsPlugins::FastJet::JetLabel;
+    //   Acts::PdgParticle pdgId{particle.getPDG()};
+    //   if (!Acts::ParticleIdHelper::isHadron(pdgId)) {
+    //     ACTS_DEBUG("Skipping non-hadron particle with PDG ID: "
+    //                << static_cast<int>(particle.getPDG()));
+    //     continue;
+    //   }
 
-  //       if(label == BJet || label == CJet) {
-  //         if(particle->momentum().pt() < m_cfg.jetLabelingHadronPtMin) {
-  //           return false;
-  //         }
-  //       }
-  //       return true;
-  //     }) |
-  //     std::views::transform([](const auto& particle) {
-  //       Acts::PdgParticle pdgId{particle->pdg_id()};
-  //       auto type = Acts::ParticleIdHelper::hadronType(pdgId);
-  //       auto label = jetLabelFromHadronType(type);
-  //       return std::make_pair(label, particle);
-  //     }) |
-  //     std::views::filter([](const auto& hadron){
-  //       return hadron.first > ActsPlugins::FastJet::JetLabel::Unknown;
-  //     });
+    for (const auto& particle : *edm4hepParticles) {
+          auto hadronView =
+        std::views::filter([this](const auto& particle)
+      {
+        if(m_cfg.jetLabelingHSHadronsOnly) {
+          if (particle.getGeneratorStatus() != 0) {
+            return false;
+          }
+        }
 
-  //     std::ranges::copy(hadronView, std::back_inserter(hadrons));
+        Acts::PdgParticle pdgId{particle.getPDG()};
+        if (!Acts::ParticleIdHelper::isHadron(pdgId)) {
+          return false;
+        }
 
-  //     //Deduplicate hadrons based on their pdg id
-  //     std::ranges::sort(hadrons, [](const auto& a, const auto& b){
-  //       return a.second->pdg_id() < b.second->pdg_id();
-  //     });
+        // if (particle->status() != HepMC3Util::kDecayedParticleStatus &&
+        //     particle->status() != HepMC3Util::kUndecayedParticleStatus) {
+        //   return false;
+        // }
 
-  //     auto unique = std::ranges::unique(hadrons);
-  //     hadrons.erase(unique.begin(), unique.end());
+        // // Apply a pt cut on B or C hadrons
+        // auto label = jetLabelFromHadronType(
+        //     Acts::ParticleIdHelper::hadronType(pdgId));
+        // using enum ActsPlugins::FastJet::JetLabel;
 
-  //       if (m_cfg.debugCsvOutput) {
-  //       static std::mutex mtxHadrons;
-  //       std::lock_guard lock(mtxHadrons);
-  //       std::ofstream outfile;
-  //       outfile.open("hadrons.csv", std::ios_base::app);
-  //       for (const auto& hadron : hadrons) {
-  //         outfile << ctx.eventNumber << "," << hadron.second->momentum().pt()
-  //                 << "," << hadron.second->momentum().eta() << ","
-  //                 << hadron.second->momentum().phi() << ","
-  //                 << static_cast<int>(hadron.second->pdg_id()) << ","
-  //                 << static_cast<int>(hadron.first);
-  //         outfile << std::endl;
-  //       }
-  //     }
+        // if(label == BJet || label == CJet) {
+        //   if(particle->momentum().pt() < m_cfg.jetLabelingHadronPtMin) {
+        //     return false;
+        //   }
+        // }
+        return true;
+      }) |
+      std::views::transform([](const auto& particle) {
+        Acts::PdgParticle pdgId{particle.getPDG()};
+        auto type = Acts::ParticleIdHelper::hadronType(pdgId);
+        auto label = jetLabelFromHadronType(type);
+        return std::make_pair(label, particle);
+        }) |
+        std::views::filter([](const auto& hadron){
+          return hadron.first > ActsPlugins::FastJet::JetLabel::Unknown;
+        });
 
-  // } // if do jet labeling
+        std::ranges::copy(hadronView, std::back_inserter(hadrons));
+
+        //Deduplicate hadrons based on their pdg id
+        std::ranges::sort(hadrons, [](const auto& a, const auto& b){
+          return a.second->getPDG() < b.second->getPDG();
+        });
+    }
+
+      
+
+    // // A lazy view over the generated particles for hadron finding
+    // auto hadronView =
+    //   genEvent.particles() | std::views::filter([this](const auto& particle)
+    //   {
+    //     if(m_cfg.jetLabelingHSHadronsOnly) {
+    //       if (HepMC3Util::eventGeneratorIndex(*particle) != 0) {
+    //         return false;
+    //       }
+    //     }
+
+    //     Acts::PdgParticle pdgId{particle->pdg_id()};
+    //     if (!Acts::ParticleIdHelper::isHadron(pdgId)) {
+    //       return false;
+    //     }
+
+    //     if (particle->status() != HepMC3Util::kDecayedParticleStatus &&
+    //         particle->status() != HepMC3Util::kUndecayedParticleStatus) {
+    //       return false;
+    //     }
+
+    //     // Apply a pt cut on B or C hadrons
+    //     auto label = jetLabelFromHadronType(
+    //         Acts::ParticleIdHelper::hadronType(pdgId));
+    //     using enum ActsPlugins::FastJet::JetLabel;
+
+    //     if(label == BJet || label == CJet) {
+    //       if(particle->momentum().pt() < m_cfg.jetLabelingHadronPtMin) {
+    //         return false;
+    //       }
+    //     }
+    //     return true;
+    //   }) |
+    //   std::views::transform([](const auto& particle) {
+    //     Acts::PdgParticle pdgId{particle->pdg_id()};
+    //     auto type = Acts::ParticleIdHelper::hadronType(pdgId);
+    //     auto label = jetLabelFromHadronType(type);
+    //     return std::make_pair(label, particle);
+    //   }) |
+    //   std::views::filter([](const auto& hadron){
+    //     return hadron.first > ActsPlugins::FastJet::JetLabel::Unknown;
+    //   });
+
+    //   std::ranges::copy(hadronView, std::back_inserter(hadrons));
+
+    //   //Deduplicate hadrons based on their pdg id
+    //   std::ranges::sort(hadrons, [](const auto& a, const auto& b){
+    //     return a.second->pdg_id() < b.second->pdg_id();
+    //   });
+
+    //   auto unique = std::ranges::unique(hadrons);
+    //   hadrons.erase(unique.begin(), unique.end());
+
+    //     if (m_cfg.debugCsvOutput) {
+    //     static std::mutex mtxHadrons;
+    //     std::lock_guard lock(mtxHadrons);
+    //     std::ofstream outfile;
+    //     outfile.open("hadrons.csv", std::ios_base::app);
+    //     for (const auto& hadron : hadrons) {
+    //       outfile << ctx.eventNumber << "," << hadron.second->momentum().pt()
+    //               << "," << hadron.second->momentum().eta() << ","
+    //               << hadron.second->momentum().phi() << ","
+    //               << static_cast<int>(hadron.second->pdg_id()) << ","
+    //               << static_cast<int>(hadron.first);
+    //       outfile << std::endl;
+    //     }
+    //   }
+
+  } // if do jet labeling
 
   // Jet classification
   // TO-DO
