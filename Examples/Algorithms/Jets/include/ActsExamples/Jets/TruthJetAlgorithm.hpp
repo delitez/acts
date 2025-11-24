@@ -14,7 +14,7 @@
 #include "ActsExamples/Framework/DataHandle.hpp"
 #include "ActsExamples/Framework/IAlgorithm.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
-#include "ActsExamples/Io/HepMC3/HepMC3Util.hpp"
+// #include "ActsExamples/Io/HepMC3/HepMC3Util.hpp"
 #include "ActsPlugins/FastJet/Jets.hpp"
 
 #include <string>
@@ -23,9 +23,9 @@ namespace fastjet {
 class PseudoJet;
 }
 
-namespace HepMC3 {
-class GenEvent;
-}
+// namespace HepMC3 {
+// class GenEvent;
+// }
 
 namespace ActsExamples {
 struct AlgorithmContext;
@@ -72,8 +72,6 @@ class TruthJetAlgorithm final : public IAlgorithm {
   Config m_cfg;
   ReadDataHandle<SimParticleContainer> m_inputTruthParticles{
       this, "inputTruthParticles"};
-  ReadDataHandle<std::shared_ptr<HepMC3::GenEvent>> m_inputHepMC3Event{
-      this, "inputHepMC3Event"};
   WriteDataHandle<std::vector<ActsPlugins::FastJet::TruthJet<TrackContainer>>>
       m_outputJets{this, "outputJets"};
 

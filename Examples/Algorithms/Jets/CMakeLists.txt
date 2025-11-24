@@ -9,8 +9,6 @@ target_link_libraries(
         Acts::Fatras
         Acts::PluginFastJet
         Acts::ExamplesFramework
-        Acts::ExamplesIoHepMC3
-        HepMC3::HepMC3
 )
 
 acts_compile_headers(ExamplesJets GLOB "include/**/*.hpp")
