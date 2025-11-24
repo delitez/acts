@@ -76,7 +76,8 @@ class Jet {
 template <typename TrackContainer>
 class TruthJet : public Jet {
  public:
-  TruthJet(const Acts::Vector4& fourMom, const JetLabel& label) : Jet(fourMom, label) {}
+  TruthJet(const Acts::Vector4& fourMom, const JetLabel& label)
+      : Jet(fourMom, label) {}
 
   /// @brief Set the truth particles as constituents of this truth jet from its barcode
   void setConstituents(const std::vector<ActsFatras::Barcode>& constituents) {
@@ -117,7 +118,8 @@ class TruthJet : public Jet {
 template <typename TrackContainer>
 class TrackJet : public Jet {
  public:
-  TrackJet(const Acts::Vector4& fourMom, const JetLabel& label) : Jet(fourMom, label) {}
+  TrackJet(const Acts::Vector4& fourMom, const JetLabel& label)
+      : Jet(fourMom, label) {}
 
   /// @brief Set the tracks as constituents of this track jet
   void setConstituents(

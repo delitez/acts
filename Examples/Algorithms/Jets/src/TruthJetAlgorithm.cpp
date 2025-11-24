@@ -94,12 +94,12 @@ ProcessCode ActsExamples::TruthJetAlgorithm::initialize() {
 
 ProcessCode ActsExamples::TruthJetAlgorithm::execute(
     const ActsExamples::AlgorithmContext& ctx) const {
-
   // Initialize the output container
   std::vector<ActsPlugins::FastJet::TruthJet<TrackContainer>>
       outputJetContainer{};
 
-  Acts::ScopedTimer globalTimer("TruthJetAlgorithm", logger(), Acts::Logging::DEBUG);
+  Acts::ScopedTimer globalTimer("TruthJetAlgorithm", logger(),
+                                Acts::Logging::DEBUG);
 
   const SimParticleContainer& truthParticlesRaw = m_inputTruthParticles(ctx);
   std::vector<const SimParticle*> truthParticles;
@@ -108,8 +108,8 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
                          [](const auto& particle) { return &particle; });
   ACTS_DEBUG("Number of truth particles: " << truthParticles.size());
 
-  const fastjet::JetDefinition defaultJetDefinition =
-      fastjet::JetDefinition(fastjet::antikt_algorithm, m_cfg.jetClusteringRadius);
+  const fastjet::JetDefinition defaultJetDefinition = fastjet::JetDefinition(
+      fastjet::antikt_algorithm, m_cfg.jetClusteringRadius);
 
   // Get the 4-momentum information from the simulated truth particles
   // and create fastjet::PseudoJet objects
@@ -128,31 +128,27 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
                    std::ios_base::app);  // append instead of overwrite
     }
 
-    for (unsigned int i=0; i < truthParticles.size(); ++i) {
+    for (unsigned int i = 0; i < truthParticles.size(); ++i) {
       const auto* particle = truthParticles.at(i);
-
-      // Check if the generated particle is from the hard scatter, if not, skip
-      // Convention is that idx = 0 is the hard scatter
-      // const auto* gp = particle->genParticle();
-      // if (m_cfg.clusterHSParticlesOnly && gp != nullptr && HepMC3Util::eventGeneratorIndex(*gp) != 0){
-      //   continue;
-      // }
 
       detail::PrimaryVertexIdGetter primaryVertexIdGetter;
 
-      // ACTS_DEBUG("Primary vertex ID: " << primaryVertexIdGetter(*particle).vertexPrimary() << 
-      //            ", PDG: " << static_cast<int>(particle->pdg()) <<
-      //            ", pT: " << particle->transverseMomentum()/Acts::UnitConstants::GeV << " GeV");
+      ACTS_VERBOSE("Primary vertex ID: "
+                   << primaryVertexIdGetter(*particle).vertexPrimary()
+                   << ", PDG: " << static_cast<int>(particle->pdg()) << ", pT: "
+                   << particle->transverseMomentum() / Acts::UnitConstants::GeV
+                   << " GeV");
 
-      if(m_cfg.clusterHSParticlesOnly && primaryVertexIdGetter(*particle).vertexPrimary() != 1) {
-          continue;
-        }
+      if (m_cfg.clusterHSParticlesOnly &&
+          primaryVertexIdGetter(*particle).vertexPrimary() != 1) {
+        continue;
+      }
 
-      fastjet::PseudoJet pseudoJet(particle->momentum().x(),
-                                   particle->momentum().y(),
-                                   particle->momentum().z(), particle->energy());
+      fastjet::PseudoJet pseudoJet(
+          particle->momentum().x(), particle->momentum().y(),
+          particle->momentum().z(), particle->energy());
 
-      if(m_cfg.debugCsvOutput){
+      if (m_cfg.debugCsvOutput) {
         outfile << ctx.eventNumber << "," << pseudoJet.pt() << ","
                 << pseudoJet.eta() << "," << pseudoJet.phi() << ","
                 << static_cast<int>(particle->pdg()) << ","
@@ -165,7 +161,7 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
       inputPseudoJets.push_back(pseudoJet);
     }
 
-    if(m_cfg.debugCsvOutput){
+    if (m_cfg.debugCsvOutput) {
       outfile.flush();
       outfile.close();
     }
@@ -176,118 +172,121 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
   std::vector<fastjet::PseudoJet> jets;
   fastjet::ClusterSequence clusterSeq;
   {
-    Acts::ScopedTimer timer("Jet clustering", logger(),
-                            Acts::Logging::DEBUG);
+    Acts::ScopedTimer timer("Jet clustering", logger(), Acts::Logging::DEBUG);
     // Run the jet clustering
-    clusterSeq = fastjet::ClusterSequence(inputPseudoJets, defaultJetDefinition);
+    clusterSeq =
+        fastjet::ClusterSequence(inputPseudoJets, defaultJetDefinition);
     // Get the jets above a certain pt threshold
     jets = sorted_by_pt(clusterSeq.inclusive_jets(m_cfg.jetPtMin));
     // Apply eta range cut if specified
-      if (m_cfg.jetEtaRange.first.has_value() ||
-          m_cfg.jetEtaRange.second.has_value()) {
-        double minEta = m_cfg.jetEtaRange.first.value_or(
-            std::numeric_limits<double>::lowest());
-        double maxEta =
-            m_cfg.jetEtaRange.second.value_or(std::numeric_limits<double>::max());
-        std::erase_if(jets, [minEta, maxEta](const auto& jet) {
-          return jet.eta() < minEta || jet.eta() > maxEta;
-        });
+    if (m_cfg.jetEtaRange.first.has_value() ||
+        m_cfg.jetEtaRange.second.has_value()) {
+      double minEta = m_cfg.jetEtaRange.first.value_or(
+          std::numeric_limits<double>::lowest());
+      double maxEta =
+          m_cfg.jetEtaRange.second.value_or(std::numeric_limits<double>::max());
+      std::erase_if(jets, [minEta, maxEta](const auto& jet) {
+        return jet.eta() < minEta || jet.eta() > maxEta;
+      });
     }
     ACTS_DEBUG("Number of clustered jets: " << jets.size());
   }
 
   // Find hadrons for jet labeling with sim particles
-  std::vector<std::pair<ActsPlugins::FastJet::JetLabel, const SimParticle*>> hadrons;
+  std::vector<std::pair<ActsPlugins::FastJet::JetLabel, const SimParticle*>>
+      hadrons;
 
-  if(m_cfg.doJetLabeling){
+  if (m_cfg.doJetLabeling) {
     Acts::ScopedTimer timer("hadron finding", logger(), Acts::Logging::DEBUG);
     ACTS_DEBUG("Jet labeling is enabled. Finding hadrons for jet labeling.");
 
     // A lazy view over the simulated particles for hadron finding
-    auto hadronView = 
-      truthParticles | std::views::filter([this](const auto* particle) {
-        if(m_cfg.jetLabelingHSHadronsOnly) {
-          detail::PrimaryVertexIdGetter primaryVertexIdGetter;
-          if (primaryVertexIdGetter(*particle).vertexPrimary() != 1) {
+    auto hadronView =
+        truthParticles | std::views::filter([this](const auto* particle) {
+          if (m_cfg.jetLabelingHSHadronsOnly) {
+            detail::PrimaryVertexIdGetter primaryVertexIdGetter;
+            if (primaryVertexIdGetter(*particle).vertexPrimary() != 1) {
+              return false;
+            }
+          }
+
+          Acts::PdgParticle pdgId{particle->pdg()};
+          if (!Acts::ParticleIdHelper::isHadron(pdgId)) {
             return false;
           }
-        }
 
-        Acts::PdgParticle pdgId{particle->pdg()};
-        if (!Acts::ParticleIdHelper::isHadron(pdgId)) {
-          return false;
-        }
+          // Apply a pt cut on B or C hadrons
+          auto label =
+              jetLabelFromHadronType(Acts::ParticleIdHelper::hadronType(pdgId));
+          using enum ActsPlugins::FastJet::JetLabel;
 
-        // Apply a pt cut on B or C hadrons
-        auto label = jetLabelFromHadronType(
-            Acts::ParticleIdHelper::hadronType(pdgId));
-        using enum ActsPlugins::FastJet::JetLabel;
-
-        if(label == BJet || label == CJet) {
-          if(particle->transverseMomentum() < m_cfg.jetLabelingHadronPtMin) {
-            return false;
+          if (label == BJet || label == CJet) {
+            if (particle->transverseMomentum() < m_cfg.jetLabelingHadronPtMin) {
+              return false;
+            }
           }
-        }
-        return true;
-      }) |
-      std::views::transform([](const auto* particle) {
-        Acts::PdgParticle pdgId{particle->pdg()};
-        auto type = Acts::ParticleIdHelper::hadronType(pdgId);
-        auto label = jetLabelFromHadronType(type);
-        return std::make_pair(label, particle);
-      }) |
-      std::views::filter([](const auto& hadron){
-        return hadron.first > ActsPlugins::FastJet::JetLabel::Unknown;
-      });
-  
-      std::ranges::copy(hadronView, std::back_inserter(hadrons));
+          return true;
+        }) |
+        std::views::transform([](const auto* particle) {
+          Acts::PdgParticle pdgId{particle->pdg()};
+          auto type = Acts::ParticleIdHelper::hadronType(pdgId);
+          auto label = jetLabelFromHadronType(type);
+          return std::make_pair(label, particle);
+        }) |
+        std::views::filter([](const auto& hadron) {
+          return hadron.first > ActsPlugins::FastJet::JetLabel::Unknown;
+        });
 
-      //Deduplicate hadrons based on their pdg id
-      std::ranges::sort(hadrons, [](const auto& a, const auto& b){
-        return a.second->pdg() < b.second->pdg();
-      });
+    std::ranges::copy(hadronView, std::back_inserter(hadrons));
 
-      auto unique = std::ranges::unique(hadrons);
-      hadrons.erase(unique.begin(), unique.end());
+    // Deduplicate hadrons based on their pdg id
+    std::ranges::sort(hadrons, [](const auto& a, const auto& b) {
+      return a.second->pdg() < b.second->pdg();
+    });
 
-        if (m_cfg.debugCsvOutput) {
-        static std::mutex mtxHadrons;
-        std::lock_guard lock(mtxHadrons);
-        std::ofstream outfile;
+    auto unique = std::ranges::unique(hadrons);
+    hadrons.erase(unique.begin(), unique.end());
 
+    if (m_cfg.debugCsvOutput) {
+      static std::mutex mtxHadrons;
+      std::lock_guard lock(mtxHadrons);
+      std::ofstream outfile;
+    }
   }
-  }
-  // how many hadrons are found
-
-  ACTS_DEBUG("Number of hadrons found for jet labeling: " << hadrons.size());
 
   // Jet classification
 
-  auto classifyJet = [&] (const fastjet::PseudoJet& jet) {
-    auto hadronsInJetView = 
-      hadrons | std::views::filter([&jet, this](const auto& hadron) {
-        const auto& momentum = hadron.second->momentum();
-        Acts::Vector3 hadronJetMom{momentum[0], momentum[1], momentum[2]};
-        Acts::Vector3 jetMom{jet.px(), jet.py(), jet.pz()};
-        return Acts::VectorHelpers::deltaR(jetMom, hadronJetMom) < m_cfg.jetLabelingDeltaR;
-      }) |
-      std::views::transform([](const auto& hadron) {
-        return std::pair{hadron.second, jetLabelFromHadronType(Acts::ParticleIdHelper::hadronType(
-            Acts::PdgParticle{hadron.second->pdg()}))};
-      });
+  auto classifyJet = [&](const fastjet::PseudoJet& jet) {
+    auto hadronsInJetView =
+        hadrons | std::views::filter([&jet, this](const auto& hadron) {
+          const auto& momentum = hadron.second->momentum();
+          Acts::Vector3 hadronJetMom{momentum[0], momentum[1], momentum[2]};
+          Acts::Vector3 jetMom{jet.px(), jet.py(), jet.pz()};
+          return Acts::VectorHelpers::deltaR(jetMom, hadronJetMom) <
+                 m_cfg.jetLabelingDeltaR;
+        }) |
+        std::views::transform([](const auto& hadron) {
+          return std::pair{
+              hadron.second,
+              jetLabelFromHadronType(Acts::ParticleIdHelper::hadronType(
+                  Acts::PdgParticle{hadron.second->pdg()}))};
+        });
 
-      std::vector<std::pair<const SimParticle*, ActsPlugins::FastJet::JetLabel>> hadronsInJet;
-      std::ranges::copy(hadronsInJetView, std::back_inserter(hadronsInJet));
+    std::vector<std::pair<const SimParticle*, ActsPlugins::FastJet::JetLabel>>
+        hadronsInJet;
+    std::ranges::copy(hadronsInJetView, std::back_inserter(hadronsInJet));
 
-      ACTS_VERBOSE("-> hadrons in jet: " << hadronsInJet.size());
-      for (const auto& hadron : hadronsInJet) {
-        ACTS_VERBOSE(
-            "  - " << hadron.first->pdg() << " "
-                   << Acts::findName(Acts::PdgParticle{hadron.first->pdg()}).value_or("UNKNOWN")
-                   << " label=" << hadron.second);
-      }
+    ACTS_VERBOSE("-> hadrons in jet: " << hadronsInJet.size());
+    for (const auto& hadron : hadronsInJet) {
+      ACTS_VERBOSE(
+          "  - " << hadron.first->pdg() << " "
+                 << Acts::findName(Acts::PdgParticle{hadron.first->pdg()})
+                        .value_or("UNKNOWN")
+                 << " label=" << hadron.second);
+    }
 
-      auto maxHadronIt = std::ranges::max_element(hadronsInJet, [](const auto& a, const auto& b) { return a < b; },
+    auto maxHadronIt = std::ranges::max_element(
+        hadronsInJet, [](const auto& a, const auto& b) { return a < b; },
         [](const auto& a) {
           const auto& [hadron, label] = a;
           return label;
@@ -300,15 +299,15 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
 
     const auto& [maxHadron, maxHadronLabel] = *maxHadronIt;
 
-        ACTS_VERBOSE("-> max hadron type="
-                 << Acts::findName(Acts::PdgParticle{maxHadron->pdg()}).value_or("UNKNOWN")
+    ACTS_VERBOSE("-> max hadron type="
+                 << Acts::findName(Acts::PdgParticle{maxHadron->pdg()})
+                        .value_or("UNKNOWN")
                  << " label=" << maxHadronLabel);
 
     return maxHadronLabel;
+  };  // jet classification
 
-  }; // jet classification
-
-    boost::container::flat_map<ActsPlugins::FastJet::JetLabel, std::size_t>
+  boost::container::flat_map<ActsPlugins::FastJet::JetLabel, std::size_t>
       jetLabelCounts;
 
   static std::mutex mtxJets;
@@ -323,13 +322,14 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
       outfile.open("jets.csv", std::ios_base::app);
     }
 
-    for (unsigned int i=0; i < jets.size(); ++i) {
-
+    for (unsigned int i = 0; i < jets.size(); ++i) {
       const auto& jet = jets.at(i);
 
-      // If jet labeling is enabled, classify the jet based on its hadronic content
-      ActsPlugins::FastJet::JetLabel jetLabel = ActsPlugins::FastJet::JetLabel::Unknown;
-      if(m_cfg.doJetLabeling) {
+      // If jet labeling is enabled, classify the jet based on its hadronic
+      // content
+      ActsPlugins::FastJet::JetLabel jetLabel =
+          ActsPlugins::FastJet::JetLabel::Unknown;
+      if (m_cfg.doJetLabeling) {
         ACTS_DEBUG("Classifying jet " << i);
         auto sample = timer.sample();
         jetLabel = classifyJet(jet);
@@ -343,7 +343,8 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
 
       // Initialize truth jet for storing in the output container
       Acts::Vector4 jetFourMom{jet.px(), jet.py(), jet.pz(), jet.e()};
-      ActsPlugins::FastJet::TruthJet<TrackContainer> truthJet(jetFourMom, jetLabel);
+      ActsPlugins::FastJet::TruthJet<TrackContainer> truthJet(jetFourMom,
+                                                              jetLabel);
 
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
       std::vector<int> constituentIndices;
@@ -356,7 +357,6 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
       truthJet.setConstituentIndices(constituentIndices);
       outputJetContainer.push_back(truthJet);
 
-      
       jetLabelCounts[jetLabel] += 1;
 
       ACTS_VERBOSE("-> jet label: " << jetLabel);
@@ -370,14 +370,11 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
       }
     }
 
-        if (m_cfg.debugCsvOutput) {
+    if (m_cfg.debugCsvOutput) {
       outfile.flush();
       outfile.close();
     }
-
-
   }
-
 
   ACTS_DEBUG("-> jet label counts: ");
   for (const auto& [label, count] : jetLabelCounts) {
