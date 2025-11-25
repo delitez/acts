@@ -49,10 +49,13 @@ class TruthJetAlgorithm final : public IAlgorithm {
     double jetLabelingHadronPtMin = 5 * Acts::UnitConstants::GeV;
     /// Only label HS hadrons
     bool jetLabelingHSHadronsOnly = true;
+    /// Output for debugging
+    bool debugCsvOutput = false;
   };
 
   TruthJetAlgorithm(const Config& cfg, Acts::Logging::Level lvl);
 
+  ProcessCode initialize() override;
   ProcessCode execute(const AlgorithmContext& ctx) const override;
   ProcessCode finalize() override;
 
@@ -64,6 +67,13 @@ class TruthJetAlgorithm final : public IAlgorithm {
       this, "inputTruthParticles"};
   WriteDataHandle<std::vector<ActsPlugins::FastJet::TruthJet<TrackContainer>>>
       m_outputJets{this, "outputJets"};
+
+  /// Statistics for jets
+  mutable std::atomic<std::size_t> m_numJets = 0;
+  mutable std::atomic<std::size_t> m_numJetsAfterOverlapRemoval = 0;
+  mutable std::atomic<std::size_t> m_numLightJets = 0;
+  mutable std::atomic<std::size_t> m_numCJets = 0;
+  mutable std::atomic<std::size_t> m_numBJets = 0;
 };
 
 }  // namespace ActsExamples
