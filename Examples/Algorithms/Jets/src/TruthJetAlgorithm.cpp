@@ -15,10 +15,15 @@
 #include "Acts/Utilities/ScopedTimer.hpp"
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
 #include "ActsFatras/EventData/ProcessType.hpp"
+#include "ActsExamples/Io/HepMC3/HepMC3Util.hpp"
 
 #include <algorithm>
 #include <ranges>
 #include <stdexcept>
+
+#include <HepMC3/GenEvent.h>
+#include <HepMC3/GenParticle.h>
+#include <HepMC3/Print.h>
 
 #include <boost/container/flat_map.hpp>
 #include <fastjet/ClusterSequence.hh>
@@ -33,6 +38,12 @@ TruthJetAlgorithm::TruthJetAlgorithm(const Config& cfg,
   if (m_cfg.inputTruthParticles.empty()) {
     throw std::invalid_argument("Input particles collection is not configured");
   }
+
+  if (m_cfg.doJetLabeling && !m_cfg.inputHepMC3Event.has_value()) {
+    throw std::invalid_argument("Input HepMC3 event is not configured ");
+  }
+
+  m_inputHepMC3Event.initialize(m_cfg.inputHepMC3Event.value());
   m_inputTruthParticles.initialize(m_cfg.inputTruthParticles);
   m_outputJets.initialize(m_cfg.outputJets);
 }
@@ -91,13 +102,41 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
     for (unsigned int i = 0; i < truthParticles.size(); ++i) {
       const auto* particle = truthParticles.at(i);
 
-      detail::PrimaryVertexIdGetter primaryVertexIdGetter;
+      const HepMC3::GenParticle* gp = particle->genParticle();
+      ACTS_DEBUG("Processing truth particle " << i << ": " << particle);
+      ACTS_DEBUG("-> associated HepMC3 particle: " << gp);
+      // print event generator index and pdg of the HepMC3 particle
+      if (gp != nullptr) {
+        ACTS_DEBUG("-> HepMC3 particle event generator index: "
+                   << HepMC3Util::eventGeneratorIndex(*gp));
+        ACTS_DEBUG("-> HepMC3 particle PDG ID: " << gp->pid() << ", pT: "
+                   << gp->momentum().perp() / Acts::UnitConstants::GeV << " GeV");
+      }
 
-      ACTS_VERBOSE("Primary vertex ID: "
-                   << primaryVertexIdGetter(*particle).vertexPrimary()
-                   << ", PDG: " << static_cast<int>(particle->pdg()) << ", pT: "
-                   << particle->transverseMomentum() / Acts::UnitConstants::GeV
-                   << " GeV");
+
+      // Convention is that idx=0 is hard-scatter, check if we need to skip it
+      // if (gp != nullptr &&
+      //     HepMC3Util::eventGeneratorIndex(*gp) != 0) {
+      //   ACTS_VERBOSE("Particle " << i << " is from hard-scatter. Skipping");
+      // }
+      // else if (gp != nullptr &&
+      //          HepMC3Util::eventGeneratorIndex(*gp) != 0) {
+      //   continue;
+      // }
+
+      detail::PrimaryVertexIdGetter primaryVertexIdGetter;
+      /// print primary vertex ID and the pdg of the particle
+      ACTS_DEBUG("-> Primary vertex ID: "
+                     << primaryVertexIdGetter(*particle).vertexPrimary()
+                     << ", PDG: " << static_cast<int>(particle->pdg()) << ", pT: "
+                     << particle->transverseMomentum() / Acts::UnitConstants::GeV
+                     << " GeV");
+
+      // ACTS_VERBOSE("Primary vertex ID: "
+      //              << primaryVertexIdGetter(*particle).vertexPrimary()
+      //              << ", PDG: " << static_cast<int>(particle->pdg()) << ", pT: "
+      //              << particle->transverseMomentum() / Acts::UnitConstants::GeV
+      //              << " GeV");
 
       if (m_cfg.clusterHSParticlesOnly &&
           primaryVertexIdGetter(*particle).vertexPrimary() != 1) {

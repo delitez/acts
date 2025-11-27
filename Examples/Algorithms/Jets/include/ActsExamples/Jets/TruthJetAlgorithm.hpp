@@ -22,6 +22,10 @@ namespace fastjet {
 class PseudoJet;
 }
 
+namespace HepMC3 {
+class GenEvent;
+}
+
 namespace ActsExamples {
 struct AlgorithmContext;
 
@@ -44,6 +48,8 @@ class TruthJetAlgorithm final : public IAlgorithm {
     double jetClusteringRadius = 0.4;
     /// Only cluster HS particles
     bool clusterHSParticlesOnly = true;
+    /// Input HepMC3 event
+    std::optional<std::string> inputHepMC3Event;
     /// Do jet labeling
     bool doJetLabeling = true;
     /// Delta R for labeling
@@ -65,6 +71,8 @@ class TruthJetAlgorithm final : public IAlgorithm {
   Config m_cfg;
   ReadDataHandle<SimParticleContainer> m_inputTruthParticles{
       this, "inputTruthParticles"};
+  ReadDataHandle<std::shared_ptr<HepMC3::GenEvent>> m_inputHepMC3Event{
+      this, "inputHepMC3Event"};
   WriteDataHandle<TruthJetContainer> m_outputJets{this, "outputJets"};
 };
 

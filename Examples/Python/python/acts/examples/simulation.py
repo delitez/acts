@@ -56,7 +56,7 @@ ParticleSelectorConfig = namedtuple(
 
 TruthJetConfig = namedtuple(
     "TruthJetConfig",
-    ["inputTruthParticles", "outputJets", "jetPtMin"],
+    ["inputTruthParticles", "inputHepMC3Event", "outputJets", "jetPtMin"],
     defaults=[None, None],
 )
 
@@ -93,6 +93,7 @@ def _getParticleSelectionKWargs(config: ParticleSelectorConfig) -> dict:
 def _getTruthJetKWargs(config: TruthJetConfig) -> dict:
     return {
         "inputTruthParticles": config.inputTruthParticles,
+        "inputHepMC3Event": config.inputHepMC3Event,
         "outputJets": config.outputJets,
         "jetPtMin": config.jetPtMin,
     }
