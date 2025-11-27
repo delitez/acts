@@ -123,12 +123,20 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
       if (gp != nullptr) {
         ACTS_DEBUG("-> HepMC3 particle event generator index: "
                    << HepMC3Util::eventGeneratorIndex(*gp));
-        ACTS_DEBUG("-> HepMC3 particle PDG ID: " << gp->pid() << ", pT: "
-                   << gp->momentum().perp() / Acts::UnitConstants::GeV << " GeV");
+        ACTS_DEBUG("-> HepMC3 particle PDG ID: " << gp->pid() << ", mass: "
+                   << gp->generated_mass() / Acts::UnitConstants::GeV << " GeV");
       }
 
       edm4hep::MutableMCParticle edm4hepParticle;
       EDM4hepUtil::writeParticle(*particle, edm4hepParticle);
+
+      // print generator status, pdg and pt of the edm4hep particle
+
+      ACTS_DEBUG("-> EDM4hep particle generator status: "
+                     << edm4hepParticle.barcode()
+                     << ", PDG ID: " << edm4hepParticle.getPDG()
+                     << ", mass: "
+                     << edm4hepParticle.getMass() / Acts::UnitConstants::GeV << " GeV");
 
       // if (m_cfg.clusterHSParticlesOnly &&
       //     edm4hepParticle.getGeneratorStatus() != 0) {
@@ -149,8 +157,8 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
       /// print primary vertex ID and the pdg of the particle
       ACTS_DEBUG("-> Primary vertex ID: "
                      << primaryVertexIdGetter(*particle).vertexPrimary()
-                     << ", PDG: " << static_cast<int>(particle->pdg()) << ", pT: "
-                     << particle->transverseMomentum() / Acts::UnitConstants::GeV
+                     << ", PDG: " << static_cast<int>(particle->pdg()) << ", mass: "
+                     << particle->mass() / Acts::UnitConstants::GeV
                      << " GeV");
 
       // ACTS_VERBOSE("Primary vertex ID: "
