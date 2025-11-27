@@ -27,6 +27,6 @@ void addTruthJet(Context& ctx) {
   auto& mex = ctx.get("examples");
 
   ACTS_PYTHON_DECLARE_ALGORITHM(TruthJetAlgorithm, mex, "TruthJetAlgorithm",
-                                inputTruthParticles, inputHepMC3Event, outputJets, jetPtMin);
+                                inputTruthParticles, inputHepMC3Event, inputEDM4HepParticles, outputJets, jetPtMin);
 }  // addTruthJet
 }  // namespace ActsPython

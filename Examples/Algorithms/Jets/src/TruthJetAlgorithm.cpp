@@ -16,6 +16,7 @@
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
 #include "ActsFatras/EventData/ProcessType.hpp"
 #include "ActsExamples/Io/HepMC3/HepMC3Util.hpp"
+#include "ActsExamples/Io/EDM4hep/EDM4hepUtil.hpp"
 
 #include <algorithm>
 #include <ranges>
@@ -24,6 +25,11 @@
 #include <HepMC3/GenEvent.h>
 #include <HepMC3/GenParticle.h>
 #include <HepMC3/Print.h>
+
+#include <edm4hep/MCParticle.h>
+#include <edm4hep/MCParticleCollection.h>
+
+#include <podio/CollectionBase.h>
 
 #include <boost/container/flat_map.hpp>
 #include <fastjet/ClusterSequence.hh>
@@ -44,6 +50,14 @@ TruthJetAlgorithm::TruthJetAlgorithm(const Config& cfg,
   }
 
   m_inputHepMC3Event.initialize(m_cfg.inputHepMC3Event.value());
+    if (m_cfg.inputTruthParticles.empty()) {
+    throw std::invalid_argument("Input particles collection is not configured");
+  }
+  m_inputEDM4HepParticles.initialize(m_cfg.inputEDM4HepParticles);
+  if (m_cfg.inputEDM4HepParticles.empty()) {
+    throw std::invalid_argument(
+        "Input EDM4Hep particles collection is not configured");
+  }
   m_inputTruthParticles.initialize(m_cfg.inputTruthParticles);
   m_outputJets.initialize(m_cfg.outputJets);
 }
@@ -113,6 +127,13 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
                    << gp->momentum().perp() / Acts::UnitConstants::GeV << " GeV");
       }
 
+      edm4hep::MutableMCParticle edm4hepParticle;
+      EDM4hepUtil::writeParticle(*particle, edm4hepParticle);
+
+      // if (m_cfg.clusterHSParticlesOnly &&
+      //     edm4hepParticle.getGeneratorStatus() != 0) {
+      //   continue;
+      // }
 
       // Convention is that idx=0 is hard-scatter, check if we need to skip it
       // if (gp != nullptr &&

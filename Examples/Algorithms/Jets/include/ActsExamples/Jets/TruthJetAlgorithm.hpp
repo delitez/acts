@@ -15,6 +15,7 @@
 #include "ActsExamples/Framework/IAlgorithm.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
 #include "ActsPlugins/FastJet/Jets.hpp"
+#include <podio/CollectionBase.h>
 
 #include <string>
 
@@ -25,6 +26,12 @@ class PseudoJet;
 namespace HepMC3 {
 class GenEvent;
 }
+
+namespace edm4hep {
+class MCParticle;
+class MutableMCParticle;
+class MCParticleCollection;
+}  // namespace edm4hep
 
 namespace ActsExamples {
 struct AlgorithmContext;
@@ -50,6 +57,8 @@ class TruthJetAlgorithm final : public IAlgorithm {
     bool clusterHSParticlesOnly = true;
     /// Input HepMC3 event
     std::optional<std::string> inputHepMC3Event;
+    /// input EDM4Hep event
+    std::string inputEDM4HepParticles;
     /// Do jet labeling
     bool doJetLabeling = true;
     /// Delta R for labeling
@@ -73,6 +82,8 @@ class TruthJetAlgorithm final : public IAlgorithm {
       this, "inputTruthParticles"};
   ReadDataHandle<std::shared_ptr<HepMC3::GenEvent>> m_inputHepMC3Event{
       this, "inputHepMC3Event"};
+  ReadDataHandle<std::unique_ptr<podio::CollectionBase>>
+      m_inputEDM4HepParticles{this, "inputEDM4HepParticles"};
   WriteDataHandle<TruthJetContainer> m_outputJets{this, "outputJets"};
 };
 
