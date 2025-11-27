@@ -217,7 +217,7 @@ from acts.examples.edm4hep import (
     PodioReader,
 )
 
-s = acts.examples.Sequencer(events=10, numThreads=1, logLevel=acts.logging.INFO)
+s = acts.examples.Sequencer(events=1, numThreads=1, logLevel=acts.logging.INFO)
 outputDir = "/Users/delitez/atlas/acts-spack/ci-dependencies/jetAlg_output"
 
 from acts.examples.odd import getOpenDataDetector

@@ -25,6 +25,7 @@ class PseudoJet;
 
 namespace HepMC3 {
 class GenEvent;
+class GenVertex;
 }
 
 namespace edm4hep {
