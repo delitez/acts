@@ -12,6 +12,8 @@
 #include "Acts/Material/AccumulatedMaterialSlab.hpp"
 #include "Acts/Material/MaterialSlab.hpp"
 #include "Acts/Utilities/BinUtility.hpp"
+#include "Acts/Utilities/ProtoAxis.hpp"
+#include "Acts/Utilities/ProtoAxisHelpers.hpp"
 
 #include <array>
 #include <cstddef>
@@ -53,6 +55,9 @@ class AccumulatedSurfaceMaterial {
   /// @param splitFactor is the pre/post splitting directive
   explicit AccumulatedSurfaceMaterial(const BinUtility& binUtility,
                                       double splitFactor = 0.);
+
+  AccumulatedSurfaceMaterial(const std::vector<DirectedProtoAxis>& protoAxes,
+                             double splitFactor = 0.);
 
   /// Copy Constructor
   ///
@@ -154,6 +159,9 @@ class AccumulatedSurfaceMaterial {
  private:
   /// The helper for the bin finding
   BinUtility m_binUtility{};
+
+  /// The proto axes used for binning
+  std::vector<DirectedProtoAxis> m_axes{};
 
   /// the split factor
   double m_splitFactor{0.};
