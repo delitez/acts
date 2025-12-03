@@ -26,22 +26,29 @@
 
 namespace Acts {
 
-inline std::size_t binsFromProtoAxis(DirectedProtoAxis& axis) {
+inline std::size_t binsOfProtoAxis(DirectedProtoAxis& axis) {
   return axis.getAxis().getNBins();
 }
 
-inline std::size_t binsFromProtoAxes(const std::vector<DirectedProtoAxis>& axes) {
-  std::size_t nBins = 0;
-  for (std::size_t i = 0; i < axes.size(); i++)
-  {
-    nBins += axes[i].getAxis().getNBins();
-  }
-  return nBins;
+inline std::size_t totalBinsFromProtoAxes(const std::vector<DirectedProtoAxis>& axes) {
+    return axes[0].getAxis().getNBins() *
+           (axes.size() > 1 ? axes[1].getAxis().getNBins() : 1) *
+           (axes.size() > 2 ? axes[2].getAxis().getNBins() : 1);
 }
 
-inline std::size_t binFromProtoAxis(DirectedProtoAxis& axis, const Vector2& lp) {
+inline std::size_t binsFromProtoAxes(std::vector<DirectedProtoAxis> axes, std::size_t ba) {
+    BinningData bd(axes[ba]);
+    return bd.bins();
+}
+
+inline std::size_t binFromProtoAxis(const DirectedProtoAxis& axis, const Vector2& lp) {
   BinningData bd(axis);
   return bd.searchLocal(lp);
+}
+
+inline std::size_t binFromProtoAxis(const DirectedProtoAxis& axis, const Vector3& gp) {
+  BinningData bd(axis);
+  return bd.searchGlobal(gp);
 }
 
 inline std::array<std::size_t, 3> binTripleFromProtoAxes(

@@ -9,10 +9,26 @@
 #include "Acts/Material/BinnedSurfaceMaterial.hpp"
 
 #include "Acts/Material/MaterialSlab.hpp"
+#include "Acts/Utilities/ProtoAxisHelpers.hpp"
 
 #include <ostream>
 #include <utility>
 #include <vector>
+
+Acts::BinnedSurfaceMaterial::BinnedSurfaceMaterial(
+    const std::vector<DirectedProtoAxis>& axes, MaterialSlabVector fullProperties,
+    double splitFactor, Acts::MappingType mappingType)
+    : ISurfaceMaterial(splitFactor, mappingType), m_axes(axes) {
+  // fill the material with deep copy
+  m_fullMaterial.push_back(std::move(fullProperties));
+}
+
+Acts::BinnedSurfaceMaterial::BinnedSurfaceMaterial(
+    const std::vector<DirectedProtoAxis>& axes, MaterialSlabMatrix fullProperties,
+    double splitFactor, Acts::MappingType mappingType)
+    : ISurfaceMaterial(splitFactor, mappingType),
+      m_axes(axes),
+      m_fullMaterial(std::move(fullProperties)) {}
 
 Acts::BinnedSurfaceMaterial::BinnedSurfaceMaterial(
     const BinUtility& binUtility, MaterialSlabVector fullProperties,
@@ -41,16 +57,16 @@ Acts::BinnedSurfaceMaterial& Acts::BinnedSurfaceMaterial::scale(double factor) {
 const Acts::MaterialSlab& Acts::BinnedSurfaceMaterial::materialSlab(
     const Vector2& lp) const {
   // the first bin
-  std::size_t ibin0 = m_binUtility.bin(lp, 0);
-  std::size_t ibin1 = m_binUtility.max(1) != 0u ? m_binUtility.bin(lp, 1) : 0;
+  std::size_t ibin0 = binFromProtoAxis(m_axes[0], lp);
+  std::size_t ibin1 = m_axes.size() > 1 ? binFromProtoAxis(m_axes[1], lp) : 0;
   return m_fullMaterial[ibin1][ibin0];
 }
 
 const Acts::MaterialSlab& Acts::BinnedSurfaceMaterial::materialSlab(
     const Acts::Vector3& gp) const {
   // the first bin
-  std::size_t ibin0 = m_binUtility.bin(gp, 0);
-  std::size_t ibin1 = m_binUtility.max(1) != 0u ? m_binUtility.bin(gp, 1) : 0;
+  std::size_t ibin0 = binFromProtoAxis(m_axes[0], gp);
+  std::size_t ibin1 = m_axes.size() > 1 ? binFromProtoAxis(m_axes[1], gp) : 0;
   return m_fullMaterial[ibin1][ibin0];
 }
 
