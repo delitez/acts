@@ -16,6 +16,8 @@
 #include "Acts/Utilities/BinUtility.hpp"
 #include "Acts/Utilities/BinningType.hpp"
 #include "Acts/Utilities/Grid.hpp"
+#include "Acts/Utilities/ProtoAxis.hpp"
+#include "Acts/Utilities/ProtoAxisHelpers.hpp"
 
 #include <array>
 #include <cstddef>
@@ -111,6 +113,30 @@ Grid2D createGrid2D(
 /// @return the 3D grid
 Grid3D createGrid3D(
     const BinUtility& bins,
+    std::function<Acts::Vector3(Acts::Vector3)>& transfoGlobalToLocal);
+
+/// @brief Create a 2DGrid using a vector of DirectedProtoAxis.
+/// Also determine the corresponding global to local transform and grid mapping
+/// function
+///
+/// @param [in] axes DirectedProtoAxes of the volume to be mapped
+/// @param [in] transfoGlobalToLocal Global to local transform to be updated.
+///
+/// @return the 3D grid
+Grid2D createGrid2D(
+    const std::vector<DirectedProtoAxis>& axes,
+    std::function<Acts::Vector2(Acts::Vector3)>& transfoGlobalToLocal);
+
+/// @brief Create a 3DGrid using a vector of DirectedProtoAxis.
+/// Also determine the corresponding global to local transform and grid mapping
+/// function
+///
+/// @param [in] axes DirectedProtoAxes of the volume to be mapped
+/// @param [in] transfoGlobalToLocal Global to local transform to be updated.
+///
+/// @return the 3D grid
+Grid3D createGrid3D(
+    const std::vector<DirectedProtoAxis>& axes,
     std::function<Acts::Vector3(Acts::Vector3)>& transfoGlobalToLocal);
 
 /// @brief Average the material collected in a 2D grid and use it to create a 2D material grid

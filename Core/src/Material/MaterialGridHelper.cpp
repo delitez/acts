@@ -129,6 +129,102 @@ std::function<double(Acts::Vector3)> Acts::globalToLocalFromBin(
 }
 
 Acts::Grid2D Acts::createGrid2D(
+    const std::vector<DirectedProtoAxis>& axes,
+    std::function<Acts::Vector2(Acts::Vector3)>& transfoGlobalToLocal) {
+  std::vector<BinningData> binningDataVec;
+  binningDataVec.reserve(axes.size());
+  for (const auto& axis : axes) {
+    binningDataVec.emplace_back(BinningData(axis));
+  }
+  auto bu = binningDataVec;
+
+  bool isCartesian = false;
+  bool isCylindrical = false;
+
+  for (std::size_t b = 0; b < bu.size(); b++) {
+    if (bu[b].binvalue == Acts::AxisDirection::AxisX ||
+        bu[b].binvalue == Acts::AxisDirection::AxisY) {
+      isCartesian = true;
+    }
+    if (bu[b].binvalue == Acts::AxisDirection::AxisR ||
+        bu[b].binvalue == Acts::AxisDirection::AxisPhi) {
+      isCylindrical = true;
+    }
+  }
+  if (!(isCartesian || isCylindrical) || (isCylindrical && isCartesian)) {
+    throw std::invalid_argument("Incorrect bin, should be x,y,z or r,phi,z");
+  }
+
+  // First we need to create the 2 axis
+  MaterialGridAxisData gridAxis1{bu[0].min, bu[0].max, bu[0].bins()};
+  MaterialGridAxisData gridAxis2{bu[1].min, bu[1].max, bu[1].bins()};
+
+  std::function<double(Acts::Vector3)> coord1 =
+      globalToLocalFromBin(bu[0].binvalue);
+  std::function<double(Acts::Vector3)> coord2 =
+      globalToLocalFromBin(bu[1].binvalue);
+  //Transform3 transfo = bins.transform().inverse(); @to-do fix this
+  Transform3 transfo = Transform3::Identity().inverse();
+  transfoGlobalToLocal = [coord1, coord2,
+                          transfo](Acts::Vector3 pos) -> Acts::Vector2 {
+    pos = transfo * pos;
+    return {coord1(pos), coord2(pos)};
+  };
+  return Acts::createGrid(gridAxis1, gridAxis2);
+}
+
+Acts::Grid3D Acts::createGrid3D(
+    const std::vector<DirectedProtoAxis>& axes,
+    std::function<Acts::Vector3(Acts::Vector3)>& transfoGlobalToLocal) {
+    std::vector<BinningData> binningDataVec;
+  binningDataVec.reserve(axes.size());
+  for (const auto& axis : axes) {
+    binningDataVec.emplace_back(BinningData(axis));
+  }
+  auto bu = binningDataVec;
+  // First we need to create the 3 axis
+
+  bool isCartesian = false;
+  bool isCylindrical = false;
+
+  for (std::size_t b = 0; b < bu.size(); b++) {
+    if (bu[b].binvalue == Acts::AxisDirection::AxisX ||
+        bu[b].binvalue == Acts::AxisDirection::AxisY) {
+      isCartesian = true;
+    }
+    if (bu[b].binvalue == Acts::AxisDirection::AxisR ||
+        bu[b].binvalue == Acts::AxisDirection::AxisPhi) {
+      isCylindrical = true;
+    }
+  }
+  if (!(isCartesian || isCylindrical) || (isCylindrical && isCartesian)) {
+    throw std::invalid_argument("Incorrect bin, should be x,y,z or r,phi,z");
+  }
+
+  MaterialGridAxisData gridAxis1{bu[0].min, bu[0].max, bu[0].bins()};
+
+  MaterialGridAxisData gridAxis2{bu[1].min, bu[1].max, bu[1].bins()};
+
+  MaterialGridAxisData gridAxis3{bu[2].min, bu[2].max, bu[2].bins()};
+
+  std::function<double(Acts::Vector3)> coord1 =
+      globalToLocalFromBin(bu[0].binvalue);
+  std::function<double(Acts::Vector3)> coord2 =
+      globalToLocalFromBin(bu[1].binvalue);
+  std::function<double(Acts::Vector3)> coord3 =
+      globalToLocalFromBin(bu[2].binvalue);
+  // Transform3 transfo = bins.transform().inverse(); @to-do fix this
+  Transform3 transfo = Transform3::Identity().inverse();
+
+  transfoGlobalToLocal = [coord1, coord2, coord3,
+                          transfo](Acts::Vector3 pos) -> Acts::Vector3 {
+    pos = transfo * pos;
+    return {coord1(pos), coord2(pos), coord3(pos)};
+  };
+  return Acts::createGrid(gridAxis1, gridAxis2, gridAxis3);
+}
+
+Acts::Grid2D Acts::createGrid2D(
     const Acts::BinUtility& bins,
     std::function<Acts::Vector2(Acts::Vector3)>& transfoGlobalToLocal) {
   auto bu = bins.binningData();
