@@ -37,9 +37,12 @@ inline std::size_t binsOfProtoAxis(DirectedProtoAxis& axis) {
 /// @return Total number of bins across all axes
 inline std::size_t totalBinsFromProtoAxes(
     const std::vector<DirectedProtoAxis>& axes) {
+<<<<<<< HEAD
   if (axes.size() == 0) {
     return 1;
   } 
+=======
+>>>>>>> 3b12c86ad (Add ProtoAxisHelper)
   return axes[0].getAxis().getNBins() *
          (axes.size() > 1 ? axes[1].getAxis().getNBins() : 1) *
          (axes.size() > 2 ? axes[2].getAxis().getNBins() : 1);
@@ -104,8 +107,13 @@ inline std::array<std::size_t, 3> binTripleFromProtoAxes(
 /// @param axes DirectedProtoAxis vector
 /// @param ba Bin axis index
 /// @return Maximum bin index in the specified axis
+<<<<<<< HEAD
 inline std::size_t maxBin(const std::vector<DirectedProtoAxis>& axes,
                           std::size_t ba = 0) {
+=======
+inline std::size_t maxBin(std::vector<DirectedProtoAxis>& axes,
+                          std::size_t ba = 0) const {
+>>>>>>> 3b12c86ad (Add ProtoAxisHelper)
   std::vector<BinningData> binningDataVec;
   binningDataVec.reserve(axes.size());
   for (const auto& axis : axes) {
@@ -117,4 +125,8 @@ inline std::size_t maxBin(const std::vector<DirectedProtoAxis>& axes,
   return (binningDataVec[ba].bins() - 1);
 }
 
+<<<<<<< HEAD
 }  // namespace Acts
+=======
+}  // namespace Acts
+>>>>>>> 3b12c86ad (Add ProtoAxisHelper)
