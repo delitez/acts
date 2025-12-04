@@ -13,6 +13,7 @@
 #include "Acts/Material/MaterialSlab.hpp"
 #include "Acts/Utilities/BinUtility.hpp"
 #include "Acts/Utilities/ProtoAxis.hpp"
+#include "Acts/Utilities/ProtoAxisHelpers.hpp"
 
 #include <iosfwd>
 #include <vector>
@@ -77,6 +78,9 @@ class ProtoSurfaceMaterialT : public ISurfaceMaterial {
   /// Return the BinUtility
   const BinningType& binning() const { return (m_binning); }
 
+  /// Return the axes
+  const std::vector<DirectedProtoAxis>& axes() const { return (m_axes); }
+
   /// Return method for full material description of the Surface - from local
   /// coordinates
   ///
@@ -105,6 +109,9 @@ class ProtoSurfaceMaterialT : public ISurfaceMaterial {
  private:
   /// A binning description
   BinningType m_binning;
+
+  /// A vector of DirectedProtoAxis
+  std::vector<DirectedProtoAxis> m_axes;
 
   /// Dummy material properties
   MaterialSlab m_materialSlab = MaterialSlab::Nothing();
