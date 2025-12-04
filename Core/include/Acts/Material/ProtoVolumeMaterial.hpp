@@ -12,6 +12,8 @@
 #include "Acts/Material/IVolumeMaterial.hpp"
 #include "Acts/Material/Material.hpp"
 #include "Acts/Utilities/BinUtility.hpp"
+#include "Acts/Utilities/ProtoAxis.hpp"
+#include "Acts/Utilities/ProtoAxisHelpers.hpp"
 
 #include <iosfwd>
 
@@ -37,6 +39,12 @@ class ProtoVolumeMaterial : public IVolumeMaterial {
   ///        and binning of the material on the volume
   explicit ProtoVolumeMaterial(const BinUtility& binUtility);
 
+  /// Constructor with a vector of DirectedProtoAxis - multidimensional material
+  ///
+  /// @param axes a vector of DirectedProtoAxis determining the granularity
+  ///        and binning of the material on the volume
+  explicit ProtoVolumeMaterial(const std::vector<DirectedProtoAxis>& axes);
+
   /// Copy constructor
   ///
   /// @param vmproxy The source proxy
@@ -54,6 +62,10 @@ class ProtoVolumeMaterial : public IVolumeMaterial {
   /// Return the BinUtility
   /// @return Const reference to the bin utility for this material
   const BinUtility& binUtility() const;
+
+  /// Return the axes
+  /// @return Const reference to the vector of DirectedProtoAxis for this material
+  const std::vector<DirectedProtoAxis>& axes() const;
 
   /// Assignment operator
   ///
@@ -73,6 +85,7 @@ class ProtoVolumeMaterial : public IVolumeMaterial {
 
  private:
   BinUtility m_binUtility;
+  std::vector<DirectedProtoAxis> m_axes;
   Material m_material = Material::Vacuum();
 };
 
@@ -83,6 +96,10 @@ inline const Acts::Material Acts::ProtoVolumeMaterial::material(
 
 inline const Acts::BinUtility& Acts::ProtoVolumeMaterial::binUtility() const {
   return m_binUtility;
+}
+
+inline const std::vector<Acts::DirectedProtoAxis>& Acts::ProtoVolumeMaterial::axes() const {
+  return m_axes;
 }
 
 }  // namespace Acts
