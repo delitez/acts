@@ -63,7 +63,7 @@ class BinnedSurfaceMaterial : public ISurfaceMaterial {
                         double splitFactor = 0.,
                         MappingType mappingType = MappingType::Default);
 
-    /// Explicit constructor with only full MaterialSlab,
+  /// Explicit constructor with only full MaterialSlab,
   /// for one-dimensional binning.
   ///
   /// The split factors:
@@ -129,7 +129,7 @@ class BinnedSurfaceMaterial : public ISurfaceMaterial {
   /// Return the BinUtility
   /// @return Reference to the bin utility used for material binning
   const BinUtility& binUtility() const;
-  
+
   /// Return the DirectedProtoAxes used for binning
   /// @return Reference to the DirectedProtoAxes used for material binning
   const std::vector<DirectedProtoAxis>& axes() const;
@@ -159,7 +159,8 @@ class BinnedSurfaceMaterial : public ISurfaceMaterial {
   MaterialSlabMatrix m_fullMaterial;
 };
 
-inline const std::vector<DirectedProtoAxis>& BinnedSurfaceMaterial::axes() const {
+inline const std::vector<DirectedProtoAxis>& BinnedSurfaceMaterial::axes()
+    const {
   return m_axes;
 }
 

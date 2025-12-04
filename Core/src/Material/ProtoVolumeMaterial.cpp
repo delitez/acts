@@ -13,7 +13,8 @@
 Acts::ProtoVolumeMaterial::ProtoVolumeMaterial(const BinUtility& binUtility)
     : m_binUtility(binUtility) {}
 
-Acts::ProtoVolumeMaterial::ProtoVolumeMaterial(const std::vector<DirectedProtoAxis>& axes)
+Acts::ProtoVolumeMaterial::ProtoVolumeMaterial(
+    const std::vector<DirectedProtoAxis>& axes)
     : m_axes(axes) {}
 
 std::ostream& Acts::ProtoVolumeMaterial::toStream(std::ostream& sl) const {
@@ -34,8 +35,10 @@ std::ostream& Acts::ProtoVolumeMaterial::toStream(std::ostream& sl) const {
 //           (m_axes.size() > 1 ? binsFromProtoAxes(m_axes, 1) : 1) *
 //           (m_axes.size() > 2 ? binsFromProtoAxes(m_axes, 2) : 1) >
 //       1) {
-//     sl << "   - Number of Material bins [0,1] : " << binsFromProtoAxes(m_axes, 0)
-//        << " / " << binsFromProtoAxes(m_axes, 1) << " / " << binsFromProtoAxes(m_axes, 2)
+//     sl << "   - Number of Material bins [0,1] : " <<
+//     binsFromProtoAxes(m_axes, 0)
+//        << " / " << binsFromProtoAxes(m_axes, 1) << " / " <<
+//        binsFromProtoAxes(m_axes, 2)
 //        << std::endl;
 //   } else {
 //     sl << "   - Homogeneous Material" << std::endl;

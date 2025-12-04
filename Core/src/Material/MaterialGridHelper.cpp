@@ -176,7 +176,7 @@ Acts::Grid2D Acts::createGrid2D(
 Acts::Grid3D Acts::createGrid3D(
     const std::vector<DirectedProtoAxis>& axes,
     std::function<Acts::Vector3(Acts::Vector3)>& transfoGlobalToLocal) {
-    std::vector<BinningData> binningDataVec;
+  std::vector<BinningData> binningDataVec;
   binningDataVec.reserve(axes.size());
   for (const auto& axis : axes) {
     binningDataVec.emplace_back(BinningData(axis));

@@ -16,16 +16,18 @@
 #include <vector>
 
 Acts::BinnedSurfaceMaterial::BinnedSurfaceMaterial(
-    const std::vector<DirectedProtoAxis>& axes, MaterialSlabVector fullProperties,
-    double splitFactor, Acts::MappingType mappingType)
+    const std::vector<DirectedProtoAxis>& axes,
+    MaterialSlabVector fullProperties, double splitFactor,
+    Acts::MappingType mappingType)
     : ISurfaceMaterial(splitFactor, mappingType), m_axes(axes) {
   // fill the material with deep copy
   m_fullMaterial.push_back(std::move(fullProperties));
 }
 
 Acts::BinnedSurfaceMaterial::BinnedSurfaceMaterial(
-    const std::vector<DirectedProtoAxis>& axes, MaterialSlabMatrix fullProperties,
-    double splitFactor, Acts::MappingType mappingType)
+    const std::vector<DirectedProtoAxis>& axes,
+    MaterialSlabMatrix fullProperties, double splitFactor,
+    Acts::MappingType mappingType)
     : ISurfaceMaterial(splitFactor, mappingType),
       m_axes(axes),
       m_fullMaterial(std::move(fullProperties)) {}

@@ -13,6 +13,8 @@
 #include "Acts/Material/Material.hpp"
 #include "Acts/Utilities/BinUtility.hpp"
 #include "Acts/Utilities/Interpolation.hpp"
+#include "Acts/Utilities/ProtoAxis.hpp"
+#include "Acts/Utilities/ProtoAxisHelpers.hpp"
 
 #include <functional>
 #include <optional>

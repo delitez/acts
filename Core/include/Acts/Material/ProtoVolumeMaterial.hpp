@@ -98,7 +98,8 @@ inline const Acts::BinUtility& Acts::ProtoVolumeMaterial::binUtility() const {
   return m_binUtility;
 }
 
-inline const std::vector<Acts::DirectedProtoAxis>& Acts::ProtoVolumeMaterial::axes() const {
+inline const std::vector<Acts::DirectedProtoAxis>&
+Acts::ProtoVolumeMaterial::axes() const {
   return m_axes;
 }
 

@@ -90,6 +90,10 @@ class AccumulatedSurfaceMaterial {
   /// @return Reference to the bin utility used for material binning
   const BinUtility& binUtility() const;
 
+  /// Return the proto axes
+  /// @return Reference to the vector of proto axes used for binning
+  const std::vector<DirectedProtoAxis>& axes() const { return m_axes; }
+
   /// Assign a material properties object
   ///
   /// @param lp local position for the bin assignment

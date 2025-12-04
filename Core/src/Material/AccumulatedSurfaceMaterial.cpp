@@ -34,10 +34,10 @@ Acts::AccumulatedSurfaceMaterial::AccumulatedSurfaceMaterial(
 Acts::AccumulatedSurfaceMaterial::AccumulatedSurfaceMaterial(
     const std::vector<DirectedProtoAxis>& protoAxes, double splitFactor)
     : m_axes(protoAxes), m_splitFactor(splitFactor) {
-      if (m_axes.size() < 2) {
-        throw std::invalid_argument(
-            "AccumulatedSurfaceMaterial requires at least two ProtoAxes");
-      }
+  if (m_axes.size() < 2) {
+    throw std::invalid_argument(
+        "AccumulatedSurfaceMaterial requires at least two ProtoAxes");
+  }
   std::size_t bins0 = m_axes[0].getAxis().getNBins();
   std::size_t bins1 = m_axes[1].getAxis().getNBins();
   AccumulatedVector accVec(bins0, AccumulatedMaterialSlab());
@@ -45,16 +45,16 @@ Acts::AccumulatedSurfaceMaterial::AccumulatedSurfaceMaterial(
 }
 
 std::array<std::size_t, 3> Acts::AccumulatedSurfaceMaterial::accumulate(
-  const Vector2& lp, const MaterialSlab& mp, double pathCorrection){
-    if (m_axes.size() == 0) {
-        m_accumulatedMaterial[0][0].accumulate(mp, pathCorrection);
-        return {0, 0, 0};
-    }
-    std::size_t bin0 = binFromProtoAxis(m_axes[0], lp);
-    std::size_t bin1 = binFromProtoAxis(m_axes[1], lp);
-    m_accumulatedMaterial[bin1][bin0].accumulate(mp, pathCorrection);
-    return {bin0, bin1, 0};
+    const Vector2& lp, const MaterialSlab& mp, double pathCorrection) {
+  if (m_axes.size() == 0) {
+    m_accumulatedMaterial[0][0].accumulate(mp, pathCorrection);
+    return {0, 0, 0};
   }
+  std::size_t bin0 = binFromProtoAxis(m_axes[0], lp);
+  std::size_t bin1 = binFromProtoAxis(m_axes[1], lp);
+  m_accumulatedMaterial[bin1][bin0].accumulate(mp, pathCorrection);
+  return {bin0, bin1, 0};
+}
 
 // Assign a material properties object
 std::array<std::size_t, 3> Acts::AccumulatedSurfaceMaterial::accumulate(
@@ -150,12 +150,13 @@ Acts::AccumulatedSurfaceMaterial::totalAverage() {
         m_accumulatedMaterial[0][0].totalAverage().first, m_splitFactor);
   }
 
-   // number of bins per axis from DirectedProtoAxis
+  // number of bins per axis from DirectedProtoAxis
   std::size_t bins0 = (m_axes.size() > 0) ? m_axes[0].getAxis().getNBins() : 1;
   std::size_t bins1 = (m_axes.size() > 1) ? m_axes[1].getAxis().getNBins() : 1;
 
   // build the material-property matrix and fill from accumulated data
-  MaterialSlabMatrix mpMatrix(bins1, MaterialSlabVector(bins0, MaterialSlab::Nothing()));
+  MaterialSlabMatrix mpMatrix(
+      bins1, MaterialSlabVector(bins0, MaterialSlab::Nothing()));
   for (std::size_t ib1 = 0; ib1 < bins1; ++ib1) {
     for (std::size_t ib0 = 0; ib0 < bins0; ++ib0) {
       mpMatrix[ib1][ib0] = m_accumulatedMaterial[ib1][ib0].totalAverage().first;
@@ -181,7 +182,8 @@ Acts::AccumulatedSurfaceMaterial::totalAverage() {
 //   // Loop over and fill
 //   for (std::size_t ib1 = 0; ib1 < m_binUtility.bins(1); ++ib1) {
 //     for (std::size_t ib0 = 0; ib0 < m_binUtility.bins(0); ++ib0) {
-//       mpMatrix[ib1][ib0] = m_accumulatedMaterial[ib1][ib0].totalAverage().first;
+//       mpMatrix[ib1][ib0] =
+//       m_accumulatedMaterial[ib1][ib0].totalAverage().first;
 //     }
 //   }
 //   // Now return the BinnedSurfaceMaterial
