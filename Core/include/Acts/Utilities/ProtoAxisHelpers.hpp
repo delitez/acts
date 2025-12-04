@@ -37,6 +37,9 @@ inline std::size_t binsOfProtoAxis(DirectedProtoAxis& axis) {
 /// @return Total number of bins across all axes
 inline std::size_t totalBinsFromProtoAxes(
     const std::vector<DirectedProtoAxis>& axes) {
+  if (axes.size() == 0) {
+    return 1;
+  } 
   return axes[0].getAxis().getNBins() *
          (axes.size() > 1 ? axes[1].getAxis().getNBins() : 1) *
          (axes.size() > 2 ? axes[2].getAxis().getNBins() : 1);
@@ -101,8 +104,8 @@ inline std::array<std::size_t, 3> binTripleFromProtoAxes(
 /// @param axes DirectedProtoAxis vector
 /// @param ba Bin axis index
 /// @return Maximum bin index in the specified axis
-inline std::size_t maxBin(std::vector<DirectedProtoAxis>& axes,
-                          std::size_t ba = 0) const {
+inline std::size_t maxBin(const std::vector<DirectedProtoAxis>& axes,
+                          std::size_t ba = 0) {
   std::vector<BinningData> binningDataVec;
   binningDataVec.reserve(axes.size());
   for (const auto& axis : axes) {

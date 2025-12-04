@@ -80,7 +80,7 @@ class BinnedSurfaceMaterial : public ISurfaceMaterial {
                         double splitFactor = 0.,
                         MappingType mappingType = MappingType::Default);
 
-  /// Explicit constructor with only full MaterialSlab,
+  /// Explicit constructor with only full MaterialSlab,MaterialJsonConverter.cpp
   /// for two-dimensional binning.
   ///
   /// The split factors:

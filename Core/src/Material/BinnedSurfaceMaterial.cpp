@@ -74,8 +74,8 @@ const Acts::MaterialSlab& Acts::BinnedSurfaceMaterial::materialSlab(
 
 std::ostream& Acts::BinnedSurfaceMaterial::toStream(std::ostream& sl) const {
   sl << "Acts::BinnedSurfaceMaterial : " << std::endl;
-  sl << "   - Number of Material bins [0,1] : " << m_binUtility.max(0) + 1
-     << " / " << m_binUtility.max(1) + 1 << std::endl;
+  sl << "   - Number of Material bins [0,1] : " << maxBin(m_axes, 0) + 1
+     << " / " << maxBin(m_axes, 1) + 1 << std::endl;
   sl << "   - Parse full update material    : " << std::endl;  //
   // output  the full material
   unsigned int imat1 = 0;

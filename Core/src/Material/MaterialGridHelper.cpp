@@ -163,7 +163,7 @@ Acts::Grid2D Acts::createGrid2D(
       globalToLocalFromBin(bu[0].binvalue);
   std::function<double(Acts::Vector3)> coord2 =
       globalToLocalFromBin(bu[1].binvalue);
-  //Transform3 transfo = bins.transform().inverse(); @to-do fix this
+  //Transform3 transfo = bins.transform().inverse(); // @to-do fix this
   Transform3 transfo = Transform3::Identity().inverse();
   transfoGlobalToLocal = [coord1, coord2,
                           transfo](Acts::Vector3 pos) -> Acts::Vector2 {
@@ -176,7 +176,7 @@ Acts::Grid2D Acts::createGrid2D(
 Acts::Grid3D Acts::createGrid3D(
     const std::vector<DirectedProtoAxis>& axes,
     std::function<Acts::Vector3(Acts::Vector3)>& transfoGlobalToLocal) {
-  std::vector<BinningData> binningDataVec;
+    std::vector<BinningData> binningDataVec;
   binningDataVec.reserve(axes.size());
   for (const auto& axis : axes) {
     binningDataVec.emplace_back(BinningData(axis));

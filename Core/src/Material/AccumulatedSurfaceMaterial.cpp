@@ -80,7 +80,7 @@ void Acts::AccumulatedSurfaceMaterial::trackVariance(const Vector3& gp,
   trackVariance(trackBins, slabReference);
 }
 
-// // Average the information accumulated during one event
+// Average the information accumulated during one event
 void Acts::AccumulatedSurfaceMaterial::trackVariance(
     const std::vector<std::array<std::size_t, 3>>& trackBins,
     MaterialSlab slabReference, bool emptyHit) {
@@ -151,8 +151,8 @@ Acts::AccumulatedSurfaceMaterial::totalAverage() {
   }
 
   // number of bins per axis from DirectedProtoAxis
-  std::size_t bins0 = (m_axes.size() > 0) ? m_axes[0].getAxis().getNBins() : 1;
-  std::size_t bins1 = (m_axes.size() > 1) ? m_axes[1].getAxis().getNBins() : 1;
+  std::size_t bins0 = m_axes[0].getAxis().getNBins();
+  std::size_t bins1 = m_axes[1].getAxis().getNBins();
 
   // build the material-property matrix and fill from accumulated data
   MaterialSlabMatrix mpMatrix(
@@ -164,29 +164,5 @@ Acts::AccumulatedSurfaceMaterial::totalAverage() {
   }
   BinUtility binUtility(m_axes);
   return std::make_unique<const BinnedSurfaceMaterial>(
-      binUtility, std::move(mpMatrix), m_splitFactor);
+      m_axes, std::move(mpMatrix), m_splitFactor);
 }
-
-// /// Total average creates SurfaceMaterial
-// std::unique_ptr<const Acts::ISurfaceMaterial>
-// Acts::AccumulatedSurfaceMaterial::totalAverage() {
-//   if (m_binUtility.bins() == 1) {
-//     // Return HomogeneousSurfaceMaterial
-//     return std::make_unique<HomogeneousSurfaceMaterial>(
-//         m_accumulatedMaterial[0][0].totalAverage().first, m_splitFactor);
-//   }
-//   // Create the properties matrix
-//   MaterialSlabMatrix mpMatrix(
-//       m_binUtility.bins(1),
-//       MaterialSlabVector(m_binUtility.bins(0), MaterialSlab::Nothing()));
-//   // Loop over and fill
-//   for (std::size_t ib1 = 0; ib1 < m_binUtility.bins(1); ++ib1) {
-//     for (std::size_t ib0 = 0; ib0 < m_binUtility.bins(0); ++ib0) {
-//       mpMatrix[ib1][ib0] =
-//       m_accumulatedMaterial[ib1][ib0].totalAverage().first;
-//     }
-//   }
-//   // Now return the BinnedSurfaceMaterial
-//   return std::make_unique<const BinnedSurfaceMaterial>(
-//       m_binUtility, std::move(mpMatrix), m_splitFactor);
-// }
