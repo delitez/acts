@@ -40,7 +40,7 @@ frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
-fsspec==2025.10.0
+fsspec==2025.12.0
     # via -r docs/requirements.in
 gidgethub==5.4.0
     # via -r docs/requirements.in
@@ -143,7 +143,7 @@ typing-inspection==0.4.2
     # via pydantic
 uritemplate==4.2.0
     # via gidgethub
-urllib3==2.5.0
+urllib3==2.6.0
     # via requests
 yarl==1.22.0
     # via aiohttp
