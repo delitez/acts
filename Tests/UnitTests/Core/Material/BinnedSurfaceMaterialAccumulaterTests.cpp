@@ -97,8 +97,7 @@ BOOST_AUTO_TEST_CASE(AccumulationTest) {
                              -static_cast<float>(std::numbers::pi),
                              static_cast<float>(std::numbers::pi), 4);
   DirectedProtoAxis axis11(AxisDirection::AxisZ, AxisBoundaryType::Open, -100., 100., 2);
-axis10 += axis11;
-  std::vector<DirectedProtoAxis> axes1 = {axis11};
+  std::vector<DirectedProtoAxis> axes1 = {axis10, axis11};
 
 //   surfaces[1u]->assignSurfaceMaterial(
 //       std::make_shared<ProtoSurfaceMaterial>(sb1));
@@ -109,7 +108,7 @@ axis10 += axis11;
   // Third is binned
   std::vector<MaterialSlab> mps = {mp, mp, mp};
 //   BinUtility sb2(3, -100., 100., open, AxisDirection::AxisZ);
-  DirectedProtoAxis axis20{AxisDirection::AxisZ, AxisBoundaryType::Open, -100., 100., 3};
+    DirectedProtoAxis axis20{AxisDirection::AxisZ, AxisBoundaryType::Open, -100., 100., 3};
     std::vector<DirectedProtoAxis> axes2 = {axis20};
 
 // surfaces[2u]->assignSurfaceMaterial(

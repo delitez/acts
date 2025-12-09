@@ -34,14 +34,23 @@ Acts::AccumulatedSurfaceMaterial::AccumulatedSurfaceMaterial(
 Acts::AccumulatedSurfaceMaterial::AccumulatedSurfaceMaterial(
     const std::vector<DirectedProtoAxis>& protoAxes, double splitFactor)
     : m_axes(protoAxes), m_splitFactor(splitFactor) {
-  if (m_axes.size() < 2) {
-    throw std::invalid_argument(
-        "AccumulatedSurfaceMaterial requires at least two ProtoAxes");
+  if (m_axes.size() < 1) {
+    throw std::runtime_error(
+        "AccumulatedSurfaceMaterial: At least one ProtoAxis is required for binning.");
   }
-  std::size_t bins0 = m_axes[0].getAxis().getNBins();
-  std::size_t bins1 = m_axes[1].getAxis().getNBins();
-  AccumulatedVector accVec(bins0, AccumulatedMaterialSlab());
-  m_accumulatedMaterial = AccumulatedMatrix(bins1, accVec);
+  if (m_axes.size() ==1) {
+    std::size_t bins0 = m_axes[0].getAxis().getNBins();
+    AccumulatedVector accVec(bins0, AccumulatedMaterialSlab());
+    m_accumulatedMaterial = AccumulatedMatrix(1, accVec);
+    return;
+  }
+  if (m_axes.size() == 2) {
+    std::size_t bins0 = m_axes[0].getAxis().getNBins();
+    std::size_t bins1 = m_axes[1].getAxis().getNBins();
+    AccumulatedVector accVec(bins0, AccumulatedMaterialSlab());
+    m_accumulatedMaterial = AccumulatedMatrix(bins1, accVec);
+    return;
+  }
 }
 
 std::array<std::size_t, 3> Acts::AccumulatedSurfaceMaterial::accumulate(
@@ -162,7 +171,6 @@ Acts::AccumulatedSurfaceMaterial::totalAverage() {
       mpMatrix[ib1][ib0] = m_accumulatedMaterial[ib1][ib0].totalAverage().first;
     }
   }
-  BinUtility binUtility(m_axes);
   return std::make_unique<const BinnedSurfaceMaterial>(
       m_axes, std::move(mpMatrix), m_splitFactor);
 }
