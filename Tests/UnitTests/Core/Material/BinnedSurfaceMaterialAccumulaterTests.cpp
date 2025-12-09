@@ -19,6 +19,7 @@
 #include "Acts/Surfaces/Surface.hpp"
 #include "Acts/Utilities/BinUtility.hpp"
 #include "Acts/Utilities/Logger.hpp"
+#include "Acts/Utilities/ProtoAxis.hpp"
 
 #include <numbers>
 #include <utility>
@@ -88,14 +89,33 @@ BOOST_AUTO_TEST_CASE(AccumulationTest) {
   BinUtility sb1(4, -std::numbers::pi, std::numbers::pi, closed,
                  AxisDirection::AxisPhi);
   sb1 += BinUtility(2, -100., 100., open, AxisDirection::AxisZ);
+  // DirectedProtoAxis
+  /// BinUtility(std::size_t bins, float min, float max, BinningOption opt = open,
+            //  AxisDirection value = AxisDirection::AxisX,
+            //  const Transform3& tForm = Transform3::Identity())
+  DirectedProtoAxis axis10(AxisDirection::AxisPhi, AxisBoundaryType::Closed,
+                             -static_cast<float>(std::numbers::pi),
+                             static_cast<float>(std::numbers::pi), 4);
+  DirectedProtoAxis axis11(AxisDirection::AxisZ, AxisBoundaryType::Open, -100., 100., 2);
+axis10 += axis11;
+  std::vector<DirectedProtoAxis> axes1 = {axis11};
+
+//   surfaces[1u]->assignSurfaceMaterial(
+//       std::make_shared<ProtoSurfaceMaterial>(sb1));
+
   surfaces[1u]->assignSurfaceMaterial(
-      std::make_shared<ProtoSurfaceMaterial>(sb1));
+      std::make_shared<ProtoGridSurfaceMaterial>(axes1));
 
   // Third is binned
   std::vector<MaterialSlab> mps = {mp, mp, mp};
-  BinUtility sb2(3, -100., 100., open, AxisDirection::AxisZ);
+//   BinUtility sb2(3, -100., 100., open, AxisDirection::AxisZ);
+  DirectedProtoAxis axis20{AxisDirection::AxisZ, AxisBoundaryType::Open, -100., 100., 3};
+    std::vector<DirectedProtoAxis> axes2 = {axis20};
+
+// surfaces[2u]->assignSurfaceMaterial(
+//       std::make_shared<ProtoGridSurfaceMaterial>(axes2));
   surfaces[2u]->assignSurfaceMaterial(
-      std::make_shared<BinnedSurfaceMaterial>(sb2, mps));
+      std::make_shared<BinnedSurfaceMaterial>(axes2, mps));
 
   BinnedSurfaceMaterialAccumulater::Config bsmaConfig;
   bsmaConfig.materialSurfaces = {surfaces[0].get(), surfaces[1].get(),

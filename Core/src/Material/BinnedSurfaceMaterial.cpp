@@ -59,23 +59,23 @@ Acts::BinnedSurfaceMaterial& Acts::BinnedSurfaceMaterial::scale(double factor) {
 const Acts::MaterialSlab& Acts::BinnedSurfaceMaterial::materialSlab(
     const Vector2& lp) const {
   // the first bin
-  std::size_t ibin0 = binFromProtoAxis(m_axes[0], lp);
-  std::size_t ibin1 = m_axes.size() > 1 ? binFromProtoAxis(m_axes[1], lp) : 0;
+  std::size_t ibin0 = ProtoAxisHelpers::binFromProtoAxis(m_axes[0], lp);
+  std::size_t ibin1 = m_axes.size() > 1 ? ProtoAxisHelpers::binFromProtoAxis(m_axes[1], lp) : 0;
   return m_fullMaterial[ibin1][ibin0];
 }
 
 const Acts::MaterialSlab& Acts::BinnedSurfaceMaterial::materialSlab(
     const Acts::Vector3& gp) const {
   // the first bin
-  std::size_t ibin0 = binFromProtoAxis(m_axes[0], gp);
-  std::size_t ibin1 = m_axes.size() > 1 ? binFromProtoAxis(m_axes[1], gp) : 0;
+  std::size_t ibin0 = ProtoAxisHelpers::binFromProtoAxis(m_axes[0], gp);
+  std::size_t ibin1 = m_axes.size() > 1 ? ProtoAxisHelpers::binFromProtoAxis(m_axes[1], gp) : 0;
   return m_fullMaterial[ibin1][ibin0];
 }
 
 std::ostream& Acts::BinnedSurfaceMaterial::toStream(std::ostream& sl) const {
   sl << "Acts::BinnedSurfaceMaterial : " << std::endl;
-  sl << "   - Number of Material bins [0,1] : " << maxBin(m_axes, 0) + 1
-     << " / " << maxBin(m_axes, 1) + 1 << std::endl;
+  sl << "   - Number of Material bins [0,1] : " << ProtoAxisHelpers::maxBin(m_axes, 0) + 1
+     << " / " << ProtoAxisHelpers::maxBin(m_axes, 1) + 1 << std::endl;
   sl << "   - Parse full update material    : " << std::endl;  //
   // output  the full material
   unsigned int imat1 = 0;

@@ -50,8 +50,8 @@ std::array<std::size_t, 3> Acts::AccumulatedSurfaceMaterial::accumulate(
     m_accumulatedMaterial[0][0].accumulate(mp, pathCorrection);
     return {0, 0, 0};
   }
-  std::size_t bin0 = binFromProtoAxis(m_axes[0], lp);
-  std::size_t bin1 = binFromProtoAxis(m_axes[1], lp);
+  std::size_t bin0 = ProtoAxisHelpers::binFromProtoAxis(m_axes[0], lp);
+  std::size_t bin1 = ProtoAxisHelpers::binFromProtoAxis(m_axes[1], lp);
   m_accumulatedMaterial[bin1][bin0].accumulate(mp, pathCorrection);
   return {bin0, bin1, 0};
 }
@@ -63,7 +63,7 @@ std::array<std::size_t, 3> Acts::AccumulatedSurfaceMaterial::accumulate(
     m_accumulatedMaterial[0][0].accumulate(mp, pathCorrection);
     return {0, 0, 0};
   }
-  std::array<std::size_t, 3> bTriple = binTripleFromProtoAxes(m_axes, gp);
+  std::array<std::size_t, 3> bTriple =  ProtoAxisHelpers::binTripleFromProtoAxes(m_axes, gp);
   m_accumulatedMaterial[bTriple[1]][bTriple[0]].accumulate(mp, pathCorrection);
   return bTriple;
 }
@@ -75,7 +75,7 @@ void Acts::AccumulatedSurfaceMaterial::trackVariance(const Vector3& gp,
     m_accumulatedMaterial[0][0].trackVariance(slabReference, emptyHit);
     return;
   }
-  std::array<std::size_t, 3> bTriple = binTripleFromProtoAxes(m_axes, gp);
+  std::array<std::size_t, 3> bTriple = ProtoAxisHelpers::binTripleFromProtoAxes(m_axes, gp);
   std::vector<std::array<std::size_t, 3>> trackBins = {bTriple};
   trackVariance(trackBins, slabReference);
 }
@@ -112,7 +112,7 @@ void Acts::AccumulatedSurfaceMaterial::trackAverage(const Vector3& gp,
     return;
   }
 
-  std::array<std::size_t, 3> bTriple = binTripleFromProtoAxes(m_axes, gp);
+  std::array<std::size_t, 3> bTriple = ProtoAxisHelpers::binTripleFromProtoAxes(m_axes, gp);
   std::vector<std::array<std::size_t, 3>> trackBins = {bTriple};
   trackAverage(trackBins, emptyHit);
 }
@@ -144,7 +144,7 @@ void Acts::AccumulatedSurfaceMaterial::trackAverage(
 /// Total average creates SurfaceMaterial
 std::unique_ptr<const Acts::ISurfaceMaterial>
 Acts::AccumulatedSurfaceMaterial::totalAverage() {
-  if (totalBinsFromProtoAxes(m_axes) <= 1) {
+  if (ProtoAxisHelpers::totalBinsFromProtoAxes(m_axes) <= 1) {
     // Return HomogeneousSurfaceMaterial
     return std::make_unique<HomogeneousSurfaceMaterial>(
         m_accumulatedMaterial[0][0].totalAverage().first, m_splitFactor);
