@@ -20,7 +20,7 @@ namespace Acts {
 /// @brief Get the number of bins from a ProtoAxis
 /// @param axis DirectedProtoAxis object
 /// @return Number of bins in the axis
-inline std::size_t binsOfProtoAxis(DirectedProtoAxis& axis) {
+inline std::size_t binsOfProtoAxis(const DirectedProtoAxis& axis) {
   return axis.getAxis().getNBins();
 }
 
@@ -44,7 +44,7 @@ inline std::size_t totalBinsFromProtoAxes(
 /// @param axes DirectedProtoAxis vector
 /// @param ba Bin axis index
 /// @return Number of bins in the specified axis
-inline std::size_t binsFromProtoAxes(std::vector<DirectedProtoAxis> axes,
+inline std::size_t binsFromProtoAxes(const std::vector<DirectedProtoAxis>& axes,
                                      std::size_t ba) {
   BinningData bd(axes[ba]);
   return bd.bins();
@@ -67,8 +67,7 @@ inline std::size_t binFromProtoAxis(const DirectedProtoAxis& axis,
 inline std::size_t binFromProtoAxis(const DirectedProtoAxis& axis,
                                     const Vector3& gp) {
   BinningData bd(axis);
-  const Transform3& invTransform3 = Transform3::Identity().inverse();
-  return bd.searchGlobal(invTransform3 * gp);
+  return bd.searchGlobal( gp);
 }
 
 /// @brief Get the bin triple from multiple ProtoAxes using global coordinates
@@ -99,15 +98,7 @@ inline std::array<std::size_t, 3> binTripleFromProtoAxes(
 /// @param axes DirectedProtoAxis vector
 /// @param ba Bin axis index
 /// @return Maximum bin index in the specified axis
-<<<<<<< HEAD
 inline std::size_t maxBin(const std::vector<DirectedProtoAxis>& axes,
-                          std::size_t ba = 0) {
-=======
-inline std::size_t maxBin(std::vector<DirectedProtoAxis>& axes,
-<<<<<<< HEAD
-                          std::size_t ba = 0) const {
->>>>>>> 3b12c86ad (Add ProtoAxisHelper)
-=======
                           std::size_t ba = 0) {
 >>>>>>> 31f4a1e34 (Remove unnecessary header files)
   std::vector<BinningData> binningDataVec;
@@ -121,8 +112,4 @@ inline std::size_t maxBin(std::vector<DirectedProtoAxis>& axes,
   return (binningDataVec[ba].bins() - 1);
 }
 
-<<<<<<< HEAD
 }  // namespace Acts
-=======
-}  // namespace Acts
->>>>>>> 3b12c86ad (Add ProtoAxisHelper)
