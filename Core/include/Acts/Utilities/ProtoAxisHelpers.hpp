@@ -8,18 +8,15 @@
 #pragma once
 
 #include "Acts/Definitions/Algebra.hpp"
-#include "Acts/Utilities/AxisDefinitions.hpp"
 #include "Acts/Utilities/BinningData.hpp"
-#include "Acts/Utilities/BinningType.hpp"
-#include "Acts/Utilities/Enumerate.hpp"
 #include "Acts/Utilities/ProtoAxis.hpp"
 
-#include <array>
-#include <cstddef>
-#include <iostream>
-#include <iterator>
-#include <memory>
-#include <stdexcept>
+// #include <array>
+// #include <cstddef>
+// #include <iostream>
+// #include <iterator>
+// #include <memory>
+// #include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -112,8 +109,12 @@ inline std::size_t maxBin(const std::vector<DirectedProtoAxis>& axes,
                           std::size_t ba = 0) {
 =======
 inline std::size_t maxBin(std::vector<DirectedProtoAxis>& axes,
+<<<<<<< HEAD
                           std::size_t ba = 0) const {
 >>>>>>> 3b12c86ad (Add ProtoAxisHelper)
+=======
+                          std::size_t ba = 0) {
+>>>>>>> 31f4a1e34 (Remove unnecessary header files)
   std::vector<BinningData> binningDataVec;
   binningDataVec.reserve(axes.size());
   for (const auto& axis : axes) {
