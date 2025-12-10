@@ -153,6 +153,9 @@ void Acts::AccumulatedSurfaceMaterial::trackAverage(
 /// Total average creates SurfaceMaterial
 std::unique_ptr<const Acts::ISurfaceMaterial>
 Acts::AccumulatedSurfaceMaterial::totalAverage() {
+  std::cout << "AccumulatedSurfaceMaterial::totalAverage called with "
+            << m_axes.size() 
+            << " axes." << std::endl;
   if (ProtoAxisHelpers::totalBinsFromProtoAxes(m_axes) <= 1) {
     // Return HomogeneousSurfaceMaterial
     return std::make_unique<HomogeneousSurfaceMaterial>(

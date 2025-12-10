@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace ProtoAxisHelpers {
+namespace Acts::ProtoAxisHelpers {
 
 /// @brief Get the number of bins from a ProtoAxis
 /// @param axis DirectedProtoAxis object
@@ -25,12 +25,12 @@ inline std::size_t binsOfProtoAxis(const Acts::DirectedProtoAxis& axis) {
 }
 
 /// @brief Get the total number of bins from multiple ProtoAxes
-/// @param axes Vector of DirectedProtoAxis objects
+/// @param axes Span of DirectedProtoAxis objects
 /// @return Total number of bins across all axes
 inline std::size_t totalBinsFromProtoAxes(
     std::span<const Acts::DirectedProtoAxis> axes) {
   if (axes.size() <= 0 || axes.size() > 3) {
-    throw std::runtime_error("Unsupported number of axes, must be 1-3, instead got " +
+    throw std::runtime_error("TotalBinsFromProtoAxes: Unsupported number of axes, must be 1-3, instead got " +
                              std::to_string(axes.size()) + ")");
   }
   return axes[0].getAxis().getNBins() *
@@ -39,13 +39,13 @@ inline std::size_t totalBinsFromProtoAxes(
 }
 
 /// @brief Get the number of bins from a specific ProtoAxis in a collection
-/// @param axes DirectedProtoAxis vector
+/// @param axes DirectedProtoAxis span
 /// @param ba Bin axis index
 /// @return Number of bins in the specified axis
 inline std::size_t binsFromProtoAxes(
     std::span<const Acts::DirectedProtoAxis> axes, std::size_t ba) {
   if (axes.size() <= 0 || axes.size() > 3) {
-    throw std::runtime_error("Unsupported number of axes, must be 1-3, instead got " +
+    throw std::runtime_error("BinsFromProtoAxes: Unsupported number of axes, must be 1-3, instead got " +
                              std::to_string(axes.size()) + ")");
   }
   Acts::BinningData bd(axes[ba]);
@@ -73,7 +73,7 @@ inline std::size_t binFromProtoAxis(const Acts::DirectedProtoAxis& axis,
 }
 
 /// @brief Get the bin triple from multiple ProtoAxes using global coordinates
-/// @param axes Vector of DirectedProtoAxis objects
+/// @param axes Span of DirectedProtoAxis objects
 /// @param gp Global position vector
 /// @return Array of bin indices corresponding to the global position for each axis
 inline std::array<std::size_t, 3> binTripleFromProtoAxes(
@@ -81,7 +81,7 @@ inline std::array<std::size_t, 3> binTripleFromProtoAxes(
   const Acts::Vector3& bPosition = gp;
   std::array<std::size_t, 3> bTriple = {0, 0, 0};
   if (axes.size() <= 0 || axes.size() > 3) {
-    throw std::runtime_error("Unsupported number of axes, must be 1-3, instead got " +
+    throw std::runtime_error("binTripleFromProtoAxes: Unsupported number of axes, must be 1-3, instead got " +
                              std::to_string(axes.size()) + ")");
   }
   if (axes.size() == 1) {
@@ -103,13 +103,13 @@ inline std::array<std::size_t, 3> binTripleFromProtoAxes(
 }
 
 /// @brief Get the maximum bin index from a specific ProtoAxis in a collection
-/// @param axes DirectedProtoAxis vector
+/// @param axes DirectedProtoAxis span
 /// @param ba Bin axis index
 /// @return Maximum bin index in the specified axis
 inline std::size_t maxBin(std::span<const Acts::DirectedProtoAxis> axes,
                           std::size_t ba = 0) {
   if (axes.size() <= 0 || axes.size() > 3) {
-    throw std::runtime_error("Unsupported number of axes, must be 1-3, instead got " +
+    throw std::runtime_error("maxBin: Unsupported number of axes, must be 1-3, instead got " +
                              std::to_string(axes.size()) + ")");
   }
   std::vector<Acts::BinningData> binningDataVec;
