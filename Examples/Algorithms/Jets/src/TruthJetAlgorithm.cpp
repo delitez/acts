@@ -293,9 +293,9 @@ ProcessCode ActsExamples::TruthJetAlgorithm::execute(
     }
   }
 
-  ACTS_DEBUG("-> jet label counts: ");
+  ACTS_INFO("-> jet label counts: ");
   for (const auto& [label, count] : jetLabelCounts) {
-    ACTS_DEBUG("  - " << label << ": " << count);
+    ACTS_INFO("  - " << label << ": " << count);
   }
 
   m_outputJets(ctx, std::move(outputJetContainer));
