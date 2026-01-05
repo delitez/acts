@@ -58,6 +58,10 @@ RootTrackSummaryWriter::RootTrackSummaryWriter(
   m_inputTrackParticleMatching.maybeInitialize(
       m_cfg.inputTrackParticleMatching);
 
+  if (m_cfg.writeJets) {
+    m_inputJets.maybeInitialize(m_cfg.inputJets);
+  }
+
   // Setup ROOT I/O
   auto path = m_cfg.filePath;
   m_outputFile = TFile::Open(path.c_str(), m_cfg.fileMode.c_str());
@@ -196,6 +200,14 @@ RootTrackSummaryWriter::RootTrackSummaryWriter(
 
   if (m_cfg.writeGx2fSpecific) {
     m_outputTree->Branch("nUpdatesGx2f", &m_nUpdatesGx2f);
+  }
+
+  if (m_cfg.writeJets) {
+    m_outputTree->Branch("nJets", &m_nJets);
+    m_outputTree->Branch("jet_pt", &m_jet_pt);
+    m_outputTree->Branch("jet_eta", &m_jet_eta);
+    m_outputTree->Branch("jet_phi", &m_jet_phi);
+    m_outputTree->Branch("jet_label", &m_jet_label);
   }
 }
 
@@ -548,6 +560,23 @@ ProcessCode RootTrackSummaryWriter::writeT(const AlgorithmContext& ctx,
         m_nUpdatesGx2f.push_back(-1);
       }
     }
+    if (m_cfg.writeJets) {
+      m_jet_trackIndices.push_back(track.index());
+    }
+  }  // for loop over tracks
+
+  if (m_cfg.writeJets) {
+    const auto& jets = m_inputJets(ctx);
+    for (std::size_t ijet = 0; ijet < jets.size(); ++ijet) {
+      Acts::Vector4 jet_4mom = jets[ijet].fourMomentum();
+      Acts::Vector3 jet_3mom{jet_4mom[0], jet_4mom[1], jet_4mom[2]};
+      float jet_theta = theta(jet_3mom);
+      m_jet_pt.push_back(perp(jet_4mom));
+      m_jet_eta.push_back(std::atanh(std::cos(jet_theta)));
+      m_jet_phi.push_back(phi(jet_4mom));
+      m_jet_label.push_back(static_cast<int>(jets[ijet].jetLabel()));
+    }
+    m_nJets.push_back(jets.size());
   }
 
   // fill the variables
@@ -666,6 +695,14 @@ ProcessCode RootTrackSummaryWriter::writeT(const AlgorithmContext& ctx,
   }
 
   m_nUpdatesGx2f.clear();
+
+  if (m_cfg.writeJets) {
+    m_nJets.clear();
+    m_jet_pt.clear();
+    m_jet_eta.clear();
+    m_jet_phi.clear();
+    m_jet_label.clear();
+  }
 
   return ProcessCode::SUCCESS;
 }
