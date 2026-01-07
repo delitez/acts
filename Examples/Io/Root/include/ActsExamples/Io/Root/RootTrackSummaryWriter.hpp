@@ -293,6 +293,7 @@ class RootTrackSummaryWriter final : public WriterT<ConstTrackContainer> {
   std::vector<float> m_jet_eta;
   std::vector<float> m_jet_phi;
   std::vector<int> m_jet_label;
+  std::vector<std::size_t> m_ntracks_per_jets;
 };
 
 }  // namespace ActsExamples
