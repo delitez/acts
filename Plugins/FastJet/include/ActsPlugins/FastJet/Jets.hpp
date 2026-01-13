@@ -103,10 +103,8 @@ class TruthJet : public Jet {
   }
 
   /// @brief Set the tracks associated to this truth jet
-  void setAssociatedTracks(
-      const std::vector<typename TrackContainer::TrackProxy>&
-          associatedTracks) {
-    m_associatedTracks = associatedTracks;
+  void setAssociatedTracks(std::vector<std::int32_t>& associatedTrackIndices) {
+    m_associatedTrackIndices = associatedTrackIndices;
   }
 
   /// @brief Get the tracks associated to this truth jet
@@ -122,6 +120,8 @@ class TruthJet : public Jet {
   std::vector<int> m_constituentIndices;
   /// @brief The tracks associated to this truth jet
   std::vector<typename TrackContainer::TrackProxy> m_associatedTracks;
+  /// @brief The indices of the associated tracks in the input track collection
+  std::vector<std::int32_t> m_associatedTrackIndices;
 };
 
 template <typename TrackContainer>
