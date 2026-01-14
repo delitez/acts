@@ -45,6 +45,14 @@ enum PdgParticle : std::int32_t {
   eDPlus = 411,  // D+ meson (cd)
   eAntiB0 = -eB0,
   eAntiD0 = -eD0,
+  eLambdaB0 = 5122,  // Lambda_b0 baryon (udb)
+  eXiBMinus = 5132,  // Xi_b- baryon (dsb)
+  eXiB0 = 5134,      // Xi_b0 baryon (usb)
+  eAntiLambdaB0 = -eLambdaB0,
+  eAntiXiBMinus = -eXiBMinus,
+  eAntiXiB0 = -eXiB0,
+  eSigmaB0 = 5212,  // Sigma_b0 baryon (uub)
+  eAntiSigmaB0 = -eSigmaB0,
   eNeutrinoE = 12,    // electron neutrino
   eNeutrinoMu = 14,   // muon neutrino
   eNeutrinoTau = 16,  // tau neutrino

@@ -10,6 +10,7 @@
 
 #include "Acts/Definitions/TrackParametrization.hpp"
 #include "Acts/EventData/VectorMultiTrajectory.hpp"
+#include "Acts/EventData/AnyTrackProxy.hpp"
 #include "Acts/Surfaces/Surface.hpp"
 #include "Acts/TrackFitting/GsfOptions.hpp"
 #include "Acts/Utilities/Intersection.hpp"
@@ -253,11 +254,12 @@ ProcessCode RootTrackSummaryWriter::writeT(const AlgorithmContext& ctx,
   m_eventNr = ctx.eventNumber;
 
   auto& inputJets = m_inputJets(ctx);
-  std::vector<ActsPlugins::FastJet::TruthJet<TrackContainer>> jets = inputJets;
+  std::vector<ActsPlugins::FastJet::TruthJet> jets = inputJets;
 
   // get association of tracks to jets
-  std::unordered_map<std::size_t, std::vector<std::int32_t>>
-      jetToTrackIndicesMap;
+  //std::unordered_map<std::size_t, std::vector<Acts::AnyConstTrackProxy>> jetToTrackIndicesMap;
+
+  std::unordered_map<std::size_t, std::vector<std::int32_t>> jetToTrackIndicesMap;
 
   for (const auto& track : tracks) {
     m_trackNr.push_back(track.index());
@@ -568,11 +570,10 @@ ProcessCode RootTrackSummaryWriter::writeT(const AlgorithmContext& ctx,
         m_nUpdatesGx2f.push_back(-1);
       }
     }
-    std::size_t closestJetIndex = -1;
+    std::int32_t closestJetIndex = -1;
     if (m_cfg.writeJets) {
       double minDeltaR = 0.4;
 
-      int i = 0;
       for (std::size_t ijet = 0; ijet < jets.size(); ++ijet) {
         Acts::Vector4 jet_4mom = jets[ijet].fourMomentum();
         Acts::Vector3 jet_3mom{jet_4mom[0], jet_4mom[1], jet_4mom[2]};
@@ -587,7 +588,6 @@ ProcessCode RootTrackSummaryWriter::writeT(const AlgorithmContext& ctx,
           minDeltaR = drTrackJet;
           closestJetIndex = ijet;
         }  // if drTrackJet < 0.4
-        ++i;
       }  // for loop over jets
       if (closestJetIndex != -1) {
         jetToTrackIndicesMap[closestJetIndex].push_back(track.index());
@@ -609,10 +609,13 @@ ProcessCode RootTrackSummaryWriter::writeT(const AlgorithmContext& ctx,
       if (search != jetToTrackIndicesMap.end()) {
         nTracksAssociated = search->second.size();
         ACTS_VERBOSE("Jet " << ijet << " has " << nTracksAssociated
-                            << " associated tracks.");
-        jets[ijet].setAssociatedTracks(search->second);
+                            << " associated tracks with indices:");
+        for (auto trackIdx : search->second) {
+          ACTS_VERBOSE("  Track index: " << trackIdx);
+          auto constTrack = tracks.getTrack(trackIdx);
+          Acts::AnyConstTrackProxy trackProxy(constTrack);
+        }
       }
-      // If jet has tracks associated, fill the number
       if (nTracksAssociated > 0) {
         m_ntracks_per_jets.push_back(nTracksAssociated);
       }

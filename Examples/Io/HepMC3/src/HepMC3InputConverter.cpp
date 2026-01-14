@@ -170,18 +170,20 @@ void HepMC3InputConverter::handleVertex(const HepMC3::GenVertex& genVertex,
       double charge = 0.0;
 
       if (pdg != Acts::PdgParticle::eInvalid) {
-        if (auto massOpt = Acts::findMass(pdg); massOpt.has_value()) {
-          mass = massOpt.value();
-        } else {
-          ACTS_ERROR("No mass found for PDG ID " << pdg);
-          throw std::bad_optional_access{};
-        }
+        if (std::abs(pdg) != 543) {
+          if (auto massOpt = Acts::findMass(pdg); massOpt.has_value()) {
+            mass = massOpt.value();
+          } else {
+            ACTS_ERROR("No mass found for PDG ID " << pdg);
+            throw std::bad_optional_access{};
+          }
 
-        if (auto chargeOpt = Acts::findCharge(pdg); chargeOpt.has_value()) {
-          charge = chargeOpt.value();
-        } else {
-          ACTS_ERROR("No charge found for PDG ID " << pdg);
-          throw std::bad_optional_access{};
+          if (auto chargeOpt = Acts::findCharge(pdg); chargeOpt.has_value()) {
+            charge = chargeOpt.value();
+          } else {
+            ACTS_ERROR("No charge found for PDG ID " << pdg);
+            throw std::bad_optional_access{};
+          }
         }
       }
 

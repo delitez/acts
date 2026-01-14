@@ -132,7 +132,7 @@ class TrackHandler final : public TrackHandlerMutableBase {
     return tc->getTrack(index).parameters();
   }
 
-  ParametersMap parameters(void* container,
+  ConstParametersMap parameters(void* container,
                            TrackIndexType index) const override {
     assert(container != nullptr);
     auto* tc = static_cast<container_t*>(container);
@@ -146,7 +146,7 @@ class TrackHandler final : public TrackHandlerMutableBase {
     return tc->getTrack(index).covariance();
   }
 
-  CovarianceMap covariance(void* container,
+  ConstCovarianceMap covariance(void* container,
                            TrackIndexType index) const override {
     assert(container != nullptr);
     auto* tc = static_cast<container_t*>(container);
