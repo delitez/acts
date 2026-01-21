@@ -10,6 +10,7 @@ import time
 
 import acts
 import acts.examples
+from acts.examples.edm4hep import EDM4hepParticleOutputConverter, PodioWriter, PodioReader, EDM4hepSimInputConverter
 
 actsDir = Path(__file__).parent.parent.parent.parent
 
@@ -29,6 +30,7 @@ from acts.examples.simulation import (
     addTruthJetAlg,
     addDigitization,
     ParticleSelectorConfig,
+    addSimParticleSelection,
     addDigiParticleSelection,
     addGenParticleSelection,
 )
@@ -57,60 +59,130 @@ def make_sequencer(
 
     rnd = acts.examples.RandomNumbers(seed=42)
 
-    addPythia8(
-        s,
-        nhard=args.hardscatter,
-        npileup=args.pileup,
-        # hardProcess=[
-        #     "HardQCD:all = off",
-        #     "HardQCD:gg2bbbar = on",
-        #     "HardQCD:qqbar2bbbar = on",
-        #     "PartonLevel:ISR = off",
-        #     "PartonLevel:FSR = off",
-        #     "PartonLevel:MPI = off",
-        #     "HadronLevel:all = on",
-        #     "511:mayDecay = off",
-        #     "521:mayDecay = off",
-        #     "531:mayDecay = off",
-        #     "541:mayDecay = off",
-        #     "5122:mayDecay = off",
-        # ],
-        hardProcess=[
-            "Top:qqbar2ttbar=on",
-            "HadronLevel:Decay=off",
-            "StringFlav:probQQtoQ = 0.0",
-        ],
-        # hardProcess=["WeakSingleBoson:ffbar2gmZ = on","SoftQCD:nonDiffractive=on","HardQCD:hardbbbar=on","HadronLevel:all = on"],
-        # hardProcess=["Top:qqbar2ttbar=on", "HadronLevel:Decay = off","StringFlav:probQQtoQ = 0.0","ParticleDecays:limitTau0=off"],
-        # hardProcess=["WeakSingleBoson:ffbar2gmZ = on","23:onMode = off", "23:onIfAny = 5","ParticleDecays:limitTau0=off"],
-        vtxGen=acts.examples.GaussianVertexGenerator(
-            mean=acts.Vector4(0, 0, 0, 0),
-            stddev=acts.Vector4(0.0125 * u.mm, 0.0125 * u.mm, 55.5 * u.mm, 5.0 * u.ns),
-        ),
-        rnd=rnd,
-        outputDirRoot=None,
-        outputDirCsv=None,
-        writeHepMC3=None,
+    detector, geometry = make_geometry()
+
+    # addPythia8(
+    #     s,
+    #     nhard=args.hardscatter,
+    #     npileup=args.pileup,
+    #     # hardProcess=[
+    #     #     "HardQCD:all = off",
+    #     #     "HardQCD:gg2bbbar = on",
+    #     #     "HardQCD:qqbar2bbbar = on",
+    #     #     "PartonLevel:ISR = off",
+    #     #     "PartonLevel:FSR = off",
+    #     #     "PartonLevel:MPI = off",
+    #     #     "HadronLevel:all = on",
+    #     #     "511:mayDecay = off",
+    #     #     "521:mayDecay = off",
+    #     #     "531:mayDecay = off",
+    #     #     "541:mayDecay = off",
+    #     #     "5122:mayDecay = off",
+    #     # ],
+    #     hardProcess=[
+    #         "Top:qqbar2ttbar=on",
+    #         "HadronLevel:Decay=off",
+    #         "StringFlav:probQQtoQ = 0.0",
+    #     ],
+    #     # hardProcess=["WeakSingleBoson:ffbar2gmZ = on","SoftQCD:nonDiffractive=on","HardQCD:hardbbbar=on","HadronLevel:all = on"],
+    #     # hardProcess=["Top:qqbar2ttbar=on", "HadronLevel:Decay = off","StringFlav:probQQtoQ = 0.0","ParticleDecays:limitTau0=off"],
+    #     # hardProcess=["WeakSingleBoson:ffbar2gmZ = on","23:onMode = off", "23:onIfAny = 5","ParticleDecays:limitTau0=off"],
+    #     vtxGen=acts.examples.GaussianVertexGenerator(
+    #         mean=acts.Vector4(0, 0, 0, 0),
+    #         stddev=acts.Vector4(0.0125 * u.mm, 0.0125 * u.mm, 55.5 * u.mm, 5.0 * u.ns),
+    #     ),
+    #     rnd=rnd,
+    #     outputDirRoot=None,
+    #     outputDirCsv=None,
+    #     writeHepMC3=None,
+    # )
+
+    # ##To test EDM4hepSimInputConverter
+
+    # ##First, convert particles from HepMC to EDM4hep
+
+    # converter = EDM4hepParticleOutputConverter(
+    #     level=acts.logging.INFO,
+    #     inputParticles="particles_generated",
+    #     outputParticles="MCParticles",
+    # )
+    # s.addAlgorithm(converter)
+
+    # ##Then, write EDM4hep particles
+    # s.addWriter(
+    #     PodioWriter(
+    #         level=acts.logging.INFO,
+    #         outputPath=str(outputDir / "edm4hep_particles.root"),
+    #         category="events",
+    #         collections=converter.collections,
+    #     )
+    # )
+
+    # Now continue with the rest of the edm4hep reading chain
+
+    s.addReader(
+        PodioReader(
+            level=acts.logging.DEBUG,
+            inputPath=str("/Users/delitez/atlas/acts-spack/ci-dependencies/test_jet_sample_output/r011/edm4hep_particles.root"),
+            outputFrame="events",
+            category="events",
+        )
     )
 
-    # Effective truth level selection for simulation + track reconstruction
-    addGenParticleSelection(
+    edm4hepReader = acts.examples.edm4hep.EDM4hepSimInputConverter(
+        inputFrame="events",
+        inputSimHits=[
+            "PixelBarrelReadout",
+            "PixelEndcapReadout",
+            "ShortStripBarrelReadout",
+            "ShortStripEndcapReadout",
+            "LongStripBarrelReadout",
+            "LongStripEndcapReadout",
+        ],
+        outputParticlesGenerator="particles_generated",
+        outputParticlesSimulation="particles_simulated",
+        outputSimHits="simhits",
+        outputSimVertices="vertices_truth",
+        dd4hepDetector=detector,
+        trackingGeometry=trackingGeometry,
+        sortSimHitsInTime=False,
+        particleRMax=1080 * u.mm,
+        particleZ=(-3030 * u.mm, 3030 * u.mm),
+        particlePtMin=150 * u.MeV,
+        level=acts.logging.VERBOSE,
+    )
+    s.addAlgorithm(edm4hepReader)
+
+    s.addWhiteboardAlias("particles", edm4hepReader.config.outputParticlesSimulation)
+
+    addSimParticleSelection(
         s,
         ParticleSelectorConfig(
             rho=(0.0, 24 * u.mm),
             absZ=(0.0, 1.0 * u.m),
             eta=(-3.0, 3.0),
-            pt=(150 * u.MeV, None),
+            removeNeutral=True,
         ),
     )
 
-    addFatras(
-        s,
-        trackingGeometry,
-        field,
-        rnd=rnd,
-        enableInteractions=True,
-    )
+    # Effective truth level selection for simulation + track reconstruction
+    # addGenParticleSelection(
+    #     s,
+    #     ParticleSelectorConfig(
+    #         rho=(0.0, 24 * u.mm),
+    #         absZ=(0.0, 1.0 * u.m),
+    #         eta=(-3.0, 3.0),
+    #         pt=(150 * u.MeV, None),
+    #     ),
+    # )
+
+    # addFatras(
+    #     s,
+    #     trackingGeometry,
+    #     field,
+    #     rnd=rnd,
+    #     enableInteractions=True,
+    # )
 
     addDigitization(
         s,
@@ -121,15 +193,15 @@ def make_sequencer(
         logLevel=acts.logging.ERROR,
     )
 
-    addDigiParticleSelection(
-        s,
-        ParticleSelectorConfig(
-            pt=(0.150 * u.GeV, None),
-            measurements=(7, None),
-            removeNeutral=True,
-            removeSecondaries=False,
-        ),
-    )
+    # addDigiParticleSelection(
+    #     s,
+    #     ParticleSelectorConfig(
+    #         pt=(0.150 * u.GeV, None),
+    #         measurements=(7, None),
+    #         removeNeutral=True,
+    #         removeSecondaries=False,
+    #     ),
+    # )
 
     addSeeding(
         s,
@@ -209,7 +281,7 @@ def make_sequencer(
             outputJets="output_jets",
             jetPtMin=5 * u.GeV,
         ),
-        loglevel=acts.logging.INFO,
+        loglevel=acts.logging.DEBUG,
     )
 
     s.addWriter(

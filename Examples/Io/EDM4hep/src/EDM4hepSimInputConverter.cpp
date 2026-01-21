@@ -237,6 +237,7 @@ ProcessCode EDM4hepSimInputConverter::convert(const AlgorithmContext& ctx,
                             Acts::Logging::DEBUG);
     for (const auto& particle : mcParticleCollection) {
       if (particle.parents_size() > 0) {
+        ACTS_VERBOSE("Skipping particle with parents, not a primary vertex");
         // not a primary vertex
         continue;
       }
@@ -265,6 +266,8 @@ ProcessCode EDM4hepSimInputConverter::convert(const AlgorithmContext& ctx,
       assert(vertexParticles != nullptr);
 
       if (isGeneratorStable(particle)) {
+        ACTS_VERBOSE("Primary vertex has generator stable particle "
+                             << particle.getObjectID().index);
         vertexParticles->push_back(particle.getObjectID().index);
         nVertexParticles += 1;
       }
