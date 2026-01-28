@@ -380,11 +380,16 @@ ProcessCode EDM4hepSimInputConverter::convert(const AlgorithmContext& ctx,
                                            generatorStableParticles.size());
 
       for (const auto& genParticle : generatorStableParticles) {
-        SimParticle particle =
-            EDM4hepUtil::readParticle(genParticle)
-                .withParticleId(SimBarcode()
+        nParticles += 1;
+        const auto particleId = SimBarcode()
                                     .withParticle(nParticles)
-                                    .withVertexPrimary(nPrimaryVertices));
+                                    .withVertexPrimary(nPrimaryVertices);
+        SimParticle particle =
+        EDM4hepUtil::readParticle(genParticle).withParticleId(particleId);
+            // EDM4hepUtil::readParticle(genParticle)
+            //     .withParticleId(SimBarcode()
+            //                         .withParticle(nParticles)
+            //                         .withVertexPrimary(nPrimaryVertices));
         particlesGeneratorUnordered->push_back(particle);
         ACTS_VERBOSE("+ add GEN particle " << particle);
         ACTS_VERBOSE("  - at " << particle.position().transpose());
@@ -514,10 +519,31 @@ ProcessCode EDM4hepSimInputConverter::convert(const AlgorithmContext& ctx,
   std::ranges::sort(*particlesGeneratorUnordered, detail::CompareParticleId{});
   std::ranges::sort(*particlesSimulatedUnordered, detail::CompareParticleId{});
 
+  ACTS_DEBUG("+++Sorted " << particlesGeneratorUnordered->size()
+                          << " generator particles");
+  ACTS_DEBUG("+++Sorted " << particlesSimulatedUnordered->size()
+                          << " simulated particles");
+
+  // check if particle ids are unique after sorting
+  for (std::size_t i = 1; i < particlesGeneratorUnordered->size(); ++i) {
+    const auto& prev = particlesGeneratorUnordered->at(i - 1);
+    const auto& curr = particlesGeneratorUnordered->at(i);
+    if (prev.particleId() == curr.particleId()) {
+      ACTS_DEBUG("Duplicate particle id found in generator particles: "
+                 << prev.particleId());
+    }
+  }
+
   SimParticleContainer particlesGenerator{particlesGeneratorUnordered->begin(),
                                           particlesGeneratorUnordered->end()};
 
+  ACTS_DEBUG("+++Number of particlesGenerator before reset: "
+               << particlesGenerator.size());
+
   particlesGeneratorUnordered.reset();
+
+  ACTS_DEBUG("+++Number of particlesGenerator after reset: "
+               << particlesGenerator.size());
 
   SimParticleContainer particlesSimulated{particlesSimulatedUnordered->begin(),
                                           particlesSimulatedUnordered->end()};
