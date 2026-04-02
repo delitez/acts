@@ -12,10 +12,12 @@
 #include "Acts/EventData/BoundTrackParameters.hpp"
 #include "Acts/EventData/MultiTrajectory.hpp"
 #include "Acts/EventData/SourceLink.hpp"
+#include "Acts/EventData/detail/TestSourceLink.hpp"
 #include "Acts/EventData/TrackProxy.hpp"
 #include "Acts/EventData/VectorMultiTrajectory.hpp"
 #include "Acts/EventData/VectorTrackContainer.hpp"
 #include "Acts/Surfaces/Surface.hpp"
+#include "Acts/Surfaces/PerigeeSurface.hpp"
 #include "Acts/Utilities/Result.hpp"
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
 #include "ActsExamples/TrackFitting/RefittingCalibrator.hpp"
@@ -137,6 +139,80 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
     }
     ++itrack;
   }
+
+    // trackcontainer with perigee tracks
+  auto perigeeTrackContainer = std::make_shared<Acts::VectorTrackContainer>();
+  auto perigeeTrackStateContainer = std::make_shared<Acts::VectorMultiTrajectory>();
+
+  TrackContainer perigeeTracks(perigeeTrackContainer, perigeeTrackStateContainer);
+
+  // Create a perigee surface with 0,0,0
+  const Acts::Vector3 perigeeCenter{0., 0., 0.};
+  const std::shared_ptr<Acts::PerigeeSurface> perigeeSurface =
+      Acts::Surface::makeShared<Acts::PerigeeSurface>(perigeeCenter);
+
+  auto perigeeTrackState = perigeeTrackStateContainer->makeTrackState();
+  perigeeTrackState.setUncalibratedSourceLink(Acts::SourceLink{0});    // Does that mean I add a measurement with 0?
+  perigeeTrackState.setReferenceSurface(perigeeSurface);
+
+  auto perigeeTrack = perigeeTracks.makeTrack();
+  perigeeTrack.setReferenceSurface(perigeeSurface);
+  auto perigeeTrackParams = perigeeTrack.createParametersAtReference();
+
+
+    TrackFitterFunction::GeneralFitterOptions perigeeOptions{
+        ctx.geoContext,
+        ctx.magFieldContext,
+        ctx.calibContext,
+        &perigeeTrackState.referenceSurface(),
+        Acts::PropagatorPlainOptions(ctx.geoContext, ctx.magFieldContext),
+        true};
+
+  auto perigeeResult = (*m_cfg.fit)(std::vector<Acts::SourceLink>{Acts::SourceLink{0}},
+                             perigeeTrackParams,
+                             perigeeOptions, calibrator, std::vector<const Acts::Surface*>{perigeeSurface.get()}, tracks);
+
+  if (perigeeResult.ok()) {
+    const auto& refittedPerigeeTrack = perigeeResult.value();
+    if (refittedPerigeeTrack.hasReferenceSurface()) {
+      ACTS_VERBOSE("Refitted parameters for perigee track:");
+      ACTS_VERBOSE("  " << refittedPerigeeTrack.parameters().transpose());
+    } else {
+      ACTS_DEBUG("No refitted parameters for perigee track.");
+    }
+  } else {
+    ACTS_WARNING("Fit failed for perigee track with error: "
+                 << perigeeResult.error() << ", " << perigeeResult.error().message());
+  }
+
+
+  // Acts::BoundTrackParameters perigeeTrackParams({0.,0.,0.,0.}, Acts::BoundVector::Zero(),
+  //                                                std::nullopt, Acts::ParticleHypothesis::electron()); // which particle hypothesis should I use here? Does it matter?
+
+  // auto perigeeTrack = perigeeTrackContainer.makeTrack();
+  // perigeeTrack.setReferenceSurface(perigeeSurface);
+  // auto perigeeTrackParams = perigeeTrack.createParametersAtReference();
+
+
+
+
+  // is it okay to use "testsourcelink" ?
+  // is it now "a measurement on the perigee surface"? 
+  // const Acts::detail::Test::TestSourceLink perigeeTestSourceLink(Acts::eBoundLoc0, 0., 0., perigeeSurface->geometryId(), 0);
+  // auto perigeeTrackSourceLink = Acts::SourceLink(perigeeTestSourceLink);
+
+
+  // // how do i link the measurement to the track on perigee?
+  // auto perigeeTrack = perigeeTracks.makeTrack();
+  // perigeeTrack.setReferenceSurface(perigeeSurface);
+
+
+  // auto perigeeTrackState = perigeeTrack.trackStatesReversed();
+  // auto perigeeSL = RefittingCalibrator::RefittingSourceLink{perigeeTrackState};
+
+
+
+
 
   ACTS_DEBUG("Fitted tracks: " << trackContainer->size());
 
