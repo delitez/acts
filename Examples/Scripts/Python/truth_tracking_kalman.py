@@ -30,6 +30,7 @@ def runTruthTrackingKalman(
         EtaConfig,
         PhiConfig,
         MomentumConfig,
+        addPythia8,
         addFatras,
         addDigitization,
         ParticleSelectorConfig,
@@ -52,7 +53,7 @@ def runTruthTrackingKalman(
     )
 
     s = s or acts.examples.Sequencer(
-        events=100, numThreads=-1, logLevel=acts.logging.INFO
+        events=1000, numThreads=-1, logLevel=acts.logging.INFO
     )
 
     for d in decorators:
@@ -64,19 +65,36 @@ def runTruthTrackingKalman(
     logger = acts.getDefaultLogger("Truth tracking example", acts.logging.INFO)
 
     if inputParticlePath is None:
-        addParticleGun(
+        # addParticleGun(
+        #     s,
+        #     ParticleConfig(
+        #         #num=numParticles, 
+        #         num=1,
+        #         pdg=generatedParticleType, randomizeCharge=True
+        #     ),
+        #     EtaConfig(-3.0, 3.0, uniform=True),
+        #     MomentumConfig(1.0 * u.GeV, 1.0 * u.GeV, transverse=True),
+        #     PhiConfig(0.0, 360.0 * u.degree),
+        #     vtxGen=acts.examples.GaussianVertexGenerator(
+        #         mean=acts.Vector4(0, 0, 0, 0),
+        #         #stddev=acts.Vector4(0, 0, 0, 0),
+        #         stddev=acts.Vector4(
+        #             0.0125 * u.mm, 0.0125 * u.mm, 55.5 * u.mm, 5.0 * u.ns
+        #         ),
+        #     ),
+        #     multiplicity=1,
+        #     rnd=rnd,
+        # )
+        addPythia8(
             s,
-            ParticleConfig(
-                num=numParticles, pdg=generatedParticleType, randomizeCharge=True
-            ),
-            EtaConfig(-3.0, 3.0, uniform=True),
-            MomentumConfig(1.0 * u.GeV, 100.0 * u.GeV, transverse=True),
-            PhiConfig(0.0, 360.0 * u.degree),
+            hardProcess=["Top:qqbar2ttbar=on"],
+            npileup=200,
             vtxGen=acts.examples.GaussianVertexGenerator(
                 mean=acts.Vector4(0, 0, 0, 0),
-                stddev=acts.Vector4(0, 0, 0, 0),
+                stddev=acts.Vector4(
+                    0.0125 * u.mm, 0.0125 * u.mm, 55.5 * u.mm, 5.0 * u.ns
+                ),
             ),
-            multiplicity=1,
             rnd=rnd,
         )
     else:
