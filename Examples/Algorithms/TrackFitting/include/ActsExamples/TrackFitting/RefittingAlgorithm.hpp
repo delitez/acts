@@ -34,6 +34,8 @@ class RefittingAlgorithm final : public IAlgorithm {
     int pickTrack = -1;
     /// Inflate initial covariance.
     std::array<double, 6> initialVarInflation = {1., 1., 1., 1., 1., 1.};
+    /// Add a beam spot measurement
+    bool addBeamSpotMeasurement = true;
   };
 
   /// Constructor of the fitting algorithm

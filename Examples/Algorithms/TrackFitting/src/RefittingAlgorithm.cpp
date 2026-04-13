@@ -54,48 +54,64 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
   auto trackStateContainer = std::make_shared<Acts::VectorMultiTrajectory>();
   TrackContainer tracks(trackContainer, trackStateContainer);
 
-   // Create a perigee surface with 0,0,0
-          const Acts::Vector3 perigeeCenter{0., 0., 0.};
+  if (m_cfg.addBeamSpotMeasurement) {
+    const Acts::Vector3 beamSpotCenter{0., 0., 0.};
 
-          auto perigeeVectorTrackStateContainer = std::make_shared<Acts::VectorMultiTrajectory>();
-          auto perigeeTrackState = perigeeVectorTrackStateContainer->makeTrackState();
-          // set it to the reference surface of the track and not to perigee
-          ACTS_VERBOSE("Perigee track state reference surface: " << perigeeTrackState.hasReferenceSurface());
+    auto beamSpotVectorTrackStateContainer =
+        std::make_shared<Acts::VectorMultiTrajectory>();
+    auto beamSpotTrackState =
+        beamSpotVectorTrackStateContainer->makeTrackState();
+    // set it to the reference surface of the track and not to beamSpot
+    ACTS_VERBOSE("beamSpot track state reference surface: "
+                 << beamSpotTrackState.hasReferenceSurface());
 
-          const Acts::Vector2 perigeeMeasValue{0., 0.};
-          Acts::SquareMatrix2 inflatedCov = Acts::SquareMatrix2::Zero() ;//* 12.5 * Acts::UnitConstants::um;
-          inflatedCov(0,0) = 12.5 * Acts::UnitConstants::um; //17.68 * Acts::UnitConstants::um; //156.25 * Acts::UnitConstants::um;   // square this 12.5 (used to be 17.68)
-          inflatedCov(1,1) = 55.5 * Acts::UnitConstants::mm; //78.49 * Acts::UnitConstants::mm; //3080.25 * Acts::UnitConstants::mm;   // square this 55.5 (used to be 3080.25)
+    const Acts::Vector2 beamSpotMeasValue{0., 0.};
+    Acts::SquareMatrix2 inflatedCov =
+        Acts::SquareMatrix2::Zero();  //* 12.5 * Acts::UnitConstants::um;
+    inflatedCov(0, 0) =
+        12.5 *
+        Acts::UnitConstants::um;  // 17.68 * Acts::UnitConstants::um; //156.25 *
+                                  // Acts::UnitConstants::um;   // square
+                                  // this 12.5 (used to be 17.68)
+    inflatedCov(1, 1) =
+        55.5 *
+        Acts::UnitConstants::mm;  // 78.49 * Acts::UnitConstants::mm; //3080.25
+                                  // * Acts::UnitConstants::mm;   // square
+                                  // this 55.5 (used to be 3080.25)
 
+    if (inputTracks.size() == 0) {
+      ACTS_INFO("Input tracks collection is empty");
+      return ProcessCode::SKIP;
+    }
+    auto trackRefSurfacePtr =
+        inputTracks.at(0).referenceSurface().getSharedPtr();
+    beamSpotTrackState.setReferenceSurface(trackRefSurfacePtr);
+    beamSpotTrackState.allocateCalibrated(beamSpotMeasValue, inflatedCov);
 
-              if (inputTracks.size() == 0) {
-                ACTS_INFO("Input tracks collection is empty");
-                return ProcessCode::SKIP;
-              }
-              auto trackRefSurfacePtr = inputTracks.at(0).referenceSurface().getSharedPtr();
-              perigeeTrackState.setReferenceSurface(trackRefSurfacePtr);
-              perigeeTrackState.allocateCalibrated(perigeeMeasValue, inflatedCov);
+    ACTS_VERBOSE(
+        "Set uncalibrated source link for beamSpot track state with surface "
+        << beamSpotTrackState.referenceSurface().geometryId());
 
-              ACTS_VERBOSE("Set uncalibrated source link for perigee track state with surface " << perigeeTrackState.referenceSurface().geometryId());
+    Acts::SourceLink testSL{42};
+    beamSpotTrackState.setUncalibratedSourceLink(std::move(testSL));
+    ACTS_VERBOSE("Get uncalibrated source link for beamSpot track state ");
+    Acts::SourceLink uncalibSL = beamSpotTrackState.getUncalibratedSourceLink();
 
-              Acts::SourceLink testSL{42};
-              perigeeTrackState.setUncalibratedSourceLink(std::move(testSL));
-              ACTS_VERBOSE("Get uncalibrated source link for perigee track state ");
-              Acts::SourceLink uncalibSL = perigeeTrackState.getUncalibratedSourceLink();
-              
-              //perigeeTrackState.allocateCalibrated(perigeeMeasValue, inflatedCov);
-              //ACTS_VERBOSE("Set calibrated measurement for perigee track state with surface " << perigeeTrackState.referenceSurface().geometryId());
-              //ACTS_VERBOSE("Get uncalibrated source link for perigee track state with surface " << perigeeTrackState.getUncalibratedSourceLink().getPtr() << ")");
-          //}
+    auto beamSpotConstVectorTrackStateContainer =
+        std::make_shared<Acts::ConstVectorMultiTrajectory>(
+            std::move(*beamSpotVectorTrackStateContainer));
 
-        auto perigeeConstVectorTrackStateContainer =
-                  std::make_shared<Acts::ConstVectorMultiTrajectory>(
-                      std::move(*perigeeVectorTrackStateContainer));
+    auto beamSpotConstTrackState =
+        beamSpotConstVectorTrackStateContainer->getTrackState(
+            beamSpotTrackState.index());
+    Acts::SourceLink uncalibSLconst =
+        beamSpotConstTrackState.getUncalibratedSourceLink();
+    ACTS_VERBOSE(
+        "Got uncalibrated source link for beamSpot const track state ");
 
-        auto perigeeConstTrackState = perigeeConstVectorTrackStateContainer->getTrackState(perigeeTrackState.index());
-        Acts::SourceLink uncalibSLconst = perigeeConstTrackState.getUncalibratedSourceLink();
-        ACTS_VERBOSE("Got uncalibrated source link for perigee const track state ");
-
+    RefittingCalibrator::RefittingSourceLink beamSpotSL{
+        beamSpotConstTrackState};
+  }
 
   // Perform the fit for each input track
   std::vector<Acts::SourceLink> trackSourceLinks;
@@ -147,20 +163,23 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
       auto sl = RefittingCalibrator::RefittingSourceLink{state};
       trackSourceLinks.push_back(Acts::SourceLink{sl});
     }
-    
+
     if (surfSequence.empty()) {
       ACTS_WARNING("Empty track " << itrack << " found.");
       continue;
     }
 
-    auto perigeeSL = RefittingCalibrator::RefittingSourceLink{perigeeConstTrackState};
-    trackSourceLinks.push_back(Acts::SourceLink{perigeeSL});
-    surfSequence.push_back(&perigeeConstTrackState.referenceSurface());
-    
+    if (m_cfg.addBeamSpotMeasurement) {
+      beamSpotSL =
+          RefittingCalibrator::RefittingSourceLink{beamSpotConstTrackState};
+      trackSourceLinks.push_back(Acts::SourceLink{beamSpotSL});
+      surfSequence.push_back(&beamSpotConstTrackState.referenceSurface());
+    }
+
     std::ranges::reverse(surfSequence);
 
     ACTS_VERBOSE("Initial parameters: " << track.parameters().transpose());
-  
+
     ACTS_DEBUG("Invoke direct fitter for track " << itrack);
     auto result = (*m_cfg.fit)(trackSourceLinks, initialParams, options,
                                calibrator, surfSequence, tracks);

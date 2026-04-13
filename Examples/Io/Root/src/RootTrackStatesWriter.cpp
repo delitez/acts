@@ -409,7 +409,7 @@ ProcessCode RootTrackStatesWriter::writeT(const AlgorithmContext& ctx,
       } else {
         // get the truth hits corresponding to this trackState
         // Use average truth in the case of multiple contributing sim hits
-            if (state.referenceSurface().geometryId().value() == 0u) {
+        if (state.referenceSurface().geometryId().value() == 0u) {
           continue;
         }
         const auto sl =
