@@ -331,21 +331,41 @@ ActsPlugins::extractMeanWidthProfiles(const TH2F& hist2d,
       continue;
     }
 
-    const TFitResultPtr r = proj->Fit("gaus", fitOption.c_str());
+    // Initial full-range fit
+    TFitResultPtr r = proj->Fit("gaus", fitOption.c_str());
+    
     if ((r.Get() == nullptr) || ((r->Status() % 1000) != 0)) {
       ++fitFailures;
-      ACTS_DEBUG("Failed to fit Gaussian for bin "
-                 << i << ": status "
-                 << (r.Get() != nullptr ? r->Status() : -1));
       continue;
     }
 
+    // Truncate to get rid of tails 
+    double mean = r->Parameter(1);
+    double sigma = r->Parameter(2);
+    const double RSM = 3.;  
+
+    for (int j = 1; j <= 5; ++j) {
+      double minRange = mean - RSM * sigma;
+      double maxRange = mean + RSM * sigma;
+      
+      // Re-fit in the truncated range "R"
+      std::string truncFitOption = fitOption + "R";
+      r = proj->Fit("gaus", truncFitOption.c_str(), "", minRange, maxRange);
+      
+      if ((r.Get() != nullptr) && ((r->Status() % 1000) == 0)) {
+         mean = r->Parameter(1);
+         sigma = r->Parameter(2);
+      } else {
+         break; // Fallback to last successful fit parameters
+      }
+    }
+
     // Fill mean
-    meanHist->SetBinContent(i, r->Parameter(1));
+    meanHist->SetBinContent(i, mean);
     meanHist->SetBinError(i, r->ParError(1));
 
     // Fill width (sigma)
-    widthHist->SetBinContent(i, r->Parameter(2));
+    widthHist->SetBinContent(i, sigma);
     widthHist->SetBinError(i, r->ParError(2));
   }
   const double fitFailureFraction =
