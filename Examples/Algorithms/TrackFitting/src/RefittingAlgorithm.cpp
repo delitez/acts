@@ -61,23 +61,12 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
         std::make_shared<Acts::VectorMultiTrajectory>();
     auto beamSpotTrackState =
         beamSpotVectorTrackStateContainer->makeTrackState();
-    // set it to the reference surface of the track and not to beamSpot
-    ACTS_VERBOSE("beamSpot track state reference surface: "
-                 << beamSpotTrackState.hasReferenceSurface());
 
     const Acts::Vector2 beamSpotMeasValue{0., 0.};
     Acts::SquareMatrix2 inflatedCov =
         Acts::SquareMatrix2::Zero();  //* 12.5 * Acts::UnitConstants::um;
-    inflatedCov(0, 0) =
-        12.5 *
-        Acts::UnitConstants::um;  // 17.68 * Acts::UnitConstants::um; //156.25 *
-                                  // Acts::UnitConstants::um;   // square
-                                  // this 12.5 (used to be 17.68)
-    inflatedCov(1, 1) =
-        55.5 *
-        Acts::UnitConstants::mm;  // 78.49 * Acts::UnitConstants::mm; //3080.25
-                                  // * Acts::UnitConstants::mm;   // square
-                                  // this 55.5 (used to be 3080.25)
+    inflatedCov(0, 0) = 12.5 * Acts::UnitConstants::um;
+    inflatedCov(1, 1) = 55.5 * Acts::UnitConstants::mm;
 
     if (inputTracks.size() == 0) {
       ACTS_INFO("Input tracks collection is empty");
@@ -88,13 +77,9 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
     beamSpotTrackState.setReferenceSurface(trackRefSurfacePtr);
     beamSpotTrackState.allocateCalibrated(beamSpotMeasValue, inflatedCov);
 
-    ACTS_VERBOSE(
-        "Set uncalibrated source link for beamSpot track state with surface "
-        << beamSpotTrackState.referenceSurface().geometryId());
-
     Acts::SourceLink testSL{42};
     beamSpotTrackState.setUncalibratedSourceLink(std::move(testSL));
-    ACTS_VERBOSE("Get uncalibrated source link for beamSpot track state ");
+
     Acts::SourceLink uncalibSL = beamSpotTrackState.getUncalibratedSourceLink();
 
     auto beamSpotConstVectorTrackStateContainer =
@@ -106,8 +91,6 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
             beamSpotTrackState.index());
     Acts::SourceLink uncalibSLconst =
         beamSpotConstTrackState.getUncalibratedSourceLink();
-    ACTS_VERBOSE(
-        "Got uncalibrated source link for beamSpot const track state ");
 
     RefittingCalibrator::RefittingSourceLink beamSpotSL{
         beamSpotConstTrackState};
