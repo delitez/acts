@@ -9,6 +9,7 @@
 #include "ActsExamples/TrackFitting/RefittingAlgorithm.hpp"
 
 #include "Acts/Definitions/Algebra.hpp"
+#include "Acts/Definitions/Units.hpp"
 #include "Acts/EventData/BoundTrackParameters.hpp"
 #include "Acts/EventData/MultiTrajectory.hpp"
 #include "Acts/EventData/SourceLink.hpp"
@@ -54,6 +55,49 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
   auto trackContainer = std::make_shared<Acts::VectorTrackContainer>();
   auto trackStateContainer = std::make_shared<Acts::VectorMultiTrajectory>();
   TrackContainer tracks(trackContainer, trackStateContainer);
+
+   // Create a perigee surface with 0,0,0
+          const Acts::Vector3 perigeeCenter{0., 0., 0.};
+
+          auto perigeeVectorTrackStateContainer = std::make_shared<Acts::VectorMultiTrajectory>();
+          auto perigeeTrackState = perigeeVectorTrackStateContainer->makeTrackState();
+          // set it to the reference surface of the track and not to perigee
+          ACTS_VERBOSE("Perigee track state reference surface: " << perigeeTrackState.hasReferenceSurface());
+
+          const Acts::Vector2 perigeeMeasValue{0., 0.};
+          Acts::SquareMatrix2 inflatedCov = Acts::SquareMatrix2::Zero() ;//* 12.5 * Acts::UnitConstants::um;
+          inflatedCov(0,0) = 12.5 * Acts::UnitConstants::um; //17.68 * Acts::UnitConstants::um; //156.25 * Acts::UnitConstants::um;   // square this 12.5 (used to be 17.68)
+          inflatedCov(1,1) = 55.5 * Acts::UnitConstants::mm; //78.49 * Acts::UnitConstants::mm; //3080.25 * Acts::UnitConstants::mm;   // square this 55.5 (used to be 3080.25)
+
+
+              if (inputTracks.size() == 0) {
+                ACTS_INFO("Input tracks collection is empty");
+                return ProcessCode::SKIP;
+              }
+              auto trackRefSurfacePtr = inputTracks.at(0).referenceSurface().getSharedPtr();
+              perigeeTrackState.setReferenceSurface(trackRefSurfacePtr);
+              perigeeTrackState.allocateCalibrated(perigeeMeasValue, inflatedCov);
+
+              ACTS_VERBOSE("Set uncalibrated source link for perigee track state with surface " << perigeeTrackState.referenceSurface().geometryId());
+
+              Acts::SourceLink testSL{42};
+              perigeeTrackState.setUncalibratedSourceLink(std::move(testSL));
+              ACTS_VERBOSE("Get uncalibrated source link for perigee track state ");
+              Acts::SourceLink uncalibSL = perigeeTrackState.getUncalibratedSourceLink();
+              
+              //perigeeTrackState.allocateCalibrated(perigeeMeasValue, inflatedCov);
+              //ACTS_VERBOSE("Set calibrated measurement for perigee track state with surface " << perigeeTrackState.referenceSurface().geometryId());
+              //ACTS_VERBOSE("Get uncalibrated source link for perigee track state with surface " << perigeeTrackState.getUncalibratedSourceLink().getPtr() << ")");
+          //}
+
+        auto perigeeConstVectorTrackStateContainer =
+                  std::make_shared<Acts::ConstVectorMultiTrajectory>(
+                      std::move(*perigeeVectorTrackStateContainer));
+
+        auto perigeeConstTrackState = perigeeConstVectorTrackStateContainer->getTrackState(perigeeTrackState.index());
+        Acts::SourceLink uncalibSLconst = perigeeConstTrackState.getUncalibratedSourceLink();
+        ACTS_VERBOSE("Got uncalibrated source link for perigee const track state ");
+
 
   // Perform the fit for each input track
   std::vector<Acts::SourceLink> trackSourceLinks;
@@ -105,18 +149,20 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
       auto sl = RefittingCalibrator::RefittingSourceLink{state};
       trackSourceLinks.push_back(Acts::SourceLink{sl});
     }
-
+    
     if (surfSequence.empty()) {
       ACTS_WARNING("Empty track " << itrack << " found.");
       continue;
     }
 
+    auto perigeeSL = RefittingCalibrator::RefittingSourceLink{perigeeConstTrackState};
+    trackSourceLinks.push_back(Acts::SourceLink{perigeeSL});
+    surfSequence.push_back(&perigeeConstTrackState.referenceSurface());
+    
     std::ranges::reverse(surfSequence);
 
-    ACTS_VERBOSE("Initial parameters: "
-                 << initialParams.fourPosition(ctx.geoContext).transpose()
-                 << " -> " << initialParams.direction().transpose());
-
+    ACTS_VERBOSE("Initial parameters: " << track.parameters().transpose());
+  
     ACTS_DEBUG("Invoke direct fitter for track " << itrack);
     auto result = (*m_cfg.fit)(trackSourceLinks, initialParams, options,
                                calibrator, surfSequence, tracks);
@@ -139,80 +185,6 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
     }
     ++itrack;
   }
-
-    // trackcontainer with perigee tracks
-  auto perigeeTrackContainer = std::make_shared<Acts::VectorTrackContainer>();
-  auto perigeeTrackStateContainer = std::make_shared<Acts::VectorMultiTrajectory>();
-
-  TrackContainer perigeeTracks(perigeeTrackContainer, perigeeTrackStateContainer);
-
-  // Create a perigee surface with 0,0,0
-  const Acts::Vector3 perigeeCenter{0., 0., 0.};
-  const std::shared_ptr<Acts::PerigeeSurface> perigeeSurface =
-      Acts::Surface::makeShared<Acts::PerigeeSurface>(perigeeCenter);
-
-  auto perigeeTrackState = perigeeTrackStateContainer->makeTrackState();
-  perigeeTrackState.setUncalibratedSourceLink(Acts::SourceLink{0});    // Does that mean I add a measurement with 0?
-  perigeeTrackState.setReferenceSurface(perigeeSurface);
-
-  auto perigeeTrack = perigeeTracks.makeTrack();
-  perigeeTrack.setReferenceSurface(perigeeSurface);
-  auto perigeeTrackParams = perigeeTrack.createParametersAtReference();
-
-
-    TrackFitterFunction::GeneralFitterOptions perigeeOptions{
-        ctx.geoContext,
-        ctx.magFieldContext,
-        ctx.calibContext,
-        &perigeeTrackState.referenceSurface(),
-        Acts::PropagatorPlainOptions(ctx.geoContext, ctx.magFieldContext),
-        true};
-
-  auto perigeeResult = (*m_cfg.fit)(std::vector<Acts::SourceLink>{Acts::SourceLink{0}},
-                             perigeeTrackParams,
-                             perigeeOptions, calibrator, std::vector<const Acts::Surface*>{perigeeSurface.get()}, tracks);
-
-  if (perigeeResult.ok()) {
-    const auto& refittedPerigeeTrack = perigeeResult.value();
-    if (refittedPerigeeTrack.hasReferenceSurface()) {
-      ACTS_VERBOSE("Refitted parameters for perigee track:");
-      ACTS_VERBOSE("  " << refittedPerigeeTrack.parameters().transpose());
-    } else {
-      ACTS_DEBUG("No refitted parameters for perigee track.");
-    }
-  } else {
-    ACTS_WARNING("Fit failed for perigee track with error: "
-                 << perigeeResult.error() << ", " << perigeeResult.error().message());
-  }
-
-
-  // Acts::BoundTrackParameters perigeeTrackParams({0.,0.,0.,0.}, Acts::BoundVector::Zero(),
-  //                                                std::nullopt, Acts::ParticleHypothesis::electron()); // which particle hypothesis should I use here? Does it matter?
-
-  // auto perigeeTrack = perigeeTrackContainer.makeTrack();
-  // perigeeTrack.setReferenceSurface(perigeeSurface);
-  // auto perigeeTrackParams = perigeeTrack.createParametersAtReference();
-
-
-
-
-  // is it okay to use "testsourcelink" ?
-  // is it now "a measurement on the perigee surface"? 
-  // const Acts::detail::Test::TestSourceLink perigeeTestSourceLink(Acts::eBoundLoc0, 0., 0., perigeeSurface->geometryId(), 0);
-  // auto perigeeTrackSourceLink = Acts::SourceLink(perigeeTestSourceLink);
-
-
-  // // how do i link the measurement to the track on perigee?
-  // auto perigeeTrack = perigeeTracks.makeTrack();
-  // perigeeTrack.setReferenceSurface(perigeeSurface);
-
-
-  // auto perigeeTrackState = perigeeTrack.trackStatesReversed();
-  // auto perigeeSL = RefittingCalibrator::RefittingSourceLink{perigeeTrackState};
-
-
-
-
 
   ACTS_DEBUG("Fitted tracks: " << trackContainer->size());
 

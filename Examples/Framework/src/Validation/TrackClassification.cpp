@@ -108,6 +108,9 @@ void ActsExamples::identifyContributingParticles(
     if (state.typeFlags().isOutlier()) {
       continue;
     }
+    if (state.referenceSurface().geometryId().value() == 0u) {
+      continue;
+    }
     // register all particles that generated this hit
     IndexSourceLink sl =
         state.getUncalibratedSourceLink().template get<IndexSourceLink>();
