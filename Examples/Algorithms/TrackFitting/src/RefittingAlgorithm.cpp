@@ -54,7 +54,6 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
   auto trackStateContainer = std::make_shared<Acts::VectorMultiTrajectory>();
   TrackContainer tracks(trackContainer, trackStateContainer);
 
-  if (m_cfg.addBeamSpotMeasurement) {
     const Acts::Vector3 beamSpotCenter{0., 0., 0.};
 
     auto beamSpotVectorTrackStateContainer =
@@ -65,8 +64,12 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
     const Acts::Vector2 beamSpotMeasValue{0., 0.};
     Acts::SquareMatrix2 inflatedCov =
         Acts::SquareMatrix2::Zero();  //* 12.5 * Acts::UnitConstants::um;
-    inflatedCov(0, 0) = 12.5 * Acts::UnitConstants::um;
-    inflatedCov(1, 1) = 55.5 * Acts::UnitConstants::mm;
+    inflatedCov(0, 0) =
+        12.5 *
+        Acts::UnitConstants::um; 
+    inflatedCov(1, 1) =
+        55.5 *
+        Acts::UnitConstants::mm;  
 
     if (inputTracks.size() == 0) {
       ACTS_INFO("Input tracks collection is empty");
@@ -94,7 +97,7 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
 
     RefittingCalibrator::RefittingSourceLink beamSpotSL{
         beamSpotConstTrackState};
-  }
+  
 
   // Perform the fit for each input track
   std::vector<Acts::SourceLink> trackSourceLinks;
