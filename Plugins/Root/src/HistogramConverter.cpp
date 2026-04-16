@@ -360,6 +360,11 @@ ActsPlugins::extractMeanWidthProfiles(const TH2F& hist2d,
       }
     }
 
+        if ((r.Get() == nullptr) || ((r->Status() % 1000) != 0)) {
+      ++fitFailures;
+      continue;
+    }
+
     // Fill mean
     meanHist->SetBinContent(i, mean);
     meanHist->SetBinError(i, r->ParError(1));
