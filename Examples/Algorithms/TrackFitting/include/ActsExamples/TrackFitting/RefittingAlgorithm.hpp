@@ -35,7 +35,7 @@ class RefittingAlgorithm final : public IAlgorithm {
     /// Inflate initial covariance.
     std::array<double, 6> initialVarInflation = {1., 1., 1., 1., 1., 1.};
     /// Add a beam spot measurement
-    bool addBeamSpotMeasurement = false;
+    std::optional<Acts::SquareMatrix2> beamSpotConstraint;
   };
 
   /// Constructor of the fitting algorithm

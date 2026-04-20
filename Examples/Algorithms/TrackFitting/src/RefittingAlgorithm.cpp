@@ -62,14 +62,6 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
         beamSpotVectorTrackStateContainer->makeTrackState();
 
     const Acts::Vector2 beamSpotMeasValue{0., 0.};
-    Acts::SquareMatrix2 inflatedCov =
-        Acts::SquareMatrix2::Zero();  //* 12.5 * Acts::UnitConstants::um;
-    inflatedCov(0, 0) =
-        12.5 *
-        Acts::UnitConstants::um; 
-    inflatedCov(1, 1) =
-        55.5 *
-        Acts::UnitConstants::mm;  
 
     if (inputTracks.size() == 0) {
       ACTS_INFO("Input tracks collection is empty");
@@ -78,7 +70,14 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
     auto trackRefSurfacePtr =
         inputTracks.at(0).referenceSurface().getSharedPtr();
     beamSpotTrackState.setReferenceSurface(trackRefSurfacePtr);
-    beamSpotTrackState.allocateCalibrated(beamSpotMeasValue, inflatedCov);
+
+    if (m_cfg.beamSpotConstraint.has_value()) {
+      ACTS_DEBUG("Using provided beam spot constraint matrix");
+      beamSpotTrackState.allocateCalibrated(beamSpotMeasValue, m_cfg.beamSpotConstraint.value());
+    } else {
+      ACTS_DEBUG("No beam spot constraint provided, using zero matrix");
+      beamSpotTrackState.allocateCalibrated(beamSpotMeasValue, Acts::SquareMatrix2::Zero());
+    }
 
     Acts::SourceLink testSL{42};
     beamSpotTrackState.setUncalibratedSourceLink(std::move(testSL));
@@ -155,7 +154,7 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
       continue;
     }
 
-    if (m_cfg.addBeamSpotMeasurement) {
+    if (m_cfg.beamSpotConstraint.has_value()) {
       beamSpotSL =
           RefittingCalibrator::RefittingSourceLink{beamSpotConstTrackState};
       trackSourceLinks.push_back(Acts::SourceLink{beamSpotSL});
