@@ -32,6 +32,7 @@ def runTruthTrackingKalman(
         MomentumConfig,
         addPythia8,
         addFatras,
+        addPythia8,
         addDigitization,
         ParticleSelectorConfig,
         addDigiParticleSelection,
@@ -65,26 +66,6 @@ def runTruthTrackingKalman(
     logger = acts.getDefaultLogger("Truth tracking example", acts.logging.INFO)
 
     if inputParticlePath is None:
-        # addParticleGun(
-        #     s,
-        #     ParticleConfig(
-        #         #num=numParticles, 
-        #         num=1,
-        #         pdg=generatedParticleType, randomizeCharge=True
-        #     ),
-        #     EtaConfig(-3.0, 3.0, uniform=True),
-        #     MomentumConfig(1.0 * u.GeV, 1.0 * u.GeV, transverse=True),
-        #     PhiConfig(0.0, 360.0 * u.degree),
-        #     vtxGen=acts.examples.GaussianVertexGenerator(
-        #         mean=acts.Vector4(0, 0, 0, 0),
-        #         #stddev=acts.Vector4(0, 0, 0, 0),
-        #         stddev=acts.Vector4(
-        #             0.0125 * u.mm, 0.0125 * u.mm, 55.5 * u.mm, 5.0 * u.ns
-        #         ),
-        #     ),
-        #     multiplicity=1,
-        #     rnd=rnd,
-        # )
         addPythia8(
             s,
             hardProcess=["Top:qqbar2ttbar=on"],
@@ -97,6 +78,22 @@ def runTruthTrackingKalman(
             ),
             rnd=rnd,
         )
+
+        # addParticleGun(
+        #     s,
+        #     ParticleConfig(
+        #         num=numParticles, pdg=generatedParticleType, randomizeCharge=True
+        #     ),
+        #     EtaConfig(-3.0, 3.0, uniform=True),
+        #     MomentumConfig(1.0 * u.GeV, 100.0 * u.GeV, transverse=True),
+        #     PhiConfig(0.0, 360.0 * u.degree),
+        #     vtxGen=acts.examples.GaussianVertexGenerator(
+        #         mean=acts.Vector4(0, 0, 0, 0),
+        #         stddev=acts.Vector4(0, 0, 0, 0),
+        #     ),
+        #     multiplicity=1,
+        #     rnd=rnd,
+        # )
     else:
         logger.info("Reading particles from {}", inputParticlePath.resolve())
         assert inputParticlePath.exists()

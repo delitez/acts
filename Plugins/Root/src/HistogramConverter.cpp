@@ -331,9 +331,7 @@ ActsPlugins::extractMeanWidthProfiles(const TH2F& hist2d,
       continue;
     }
 
-    // Initial full-range fit
     TFitResultPtr r = proj->Fit("gaus", fitOption.c_str());
-    
     if ((r.Get() == nullptr) || ((r->Status() % 1000) != 0)) {
       ++fitFailures;
       continue;
@@ -342,28 +340,28 @@ ActsPlugins::extractMeanWidthProfiles(const TH2F& hist2d,
     // Truncate to get rid of tails 
     double mean = r->Parameter(1);
     double sigma = r->Parameter(2);
-    const double RSM = 3.;  
+    // const double RSM = 3.;  
 
-    for (int j = 1; j <= 5; ++j) {
-      double minRange = mean - RSM * sigma;
-      double maxRange = mean + RSM * sigma;
+    // for (int j = 1; j <= 5; ++j) {
+    //   double minRange = mean - RSM * sigma;
+    //   double maxRange = mean + RSM * sigma;
       
-      // Re-fit in the truncated range "R"
-      std::string truncFitOption = fitOption + "R";
-      r = proj->Fit("gaus", truncFitOption.c_str(), "", minRange, maxRange);
+    //   // Re-fit in the truncated range "R"
+    //   std::string truncFitOption = fitOption + "R";
+    //   r = proj->Fit("gaus", truncFitOption.c_str(), "", minRange, maxRange);
       
-      if ((r.Get() != nullptr) && ((r->Status() % 1000) == 0)) {
-         mean = r->Parameter(1);
-         sigma = r->Parameter(2);
-      } else {
-         break; // Fallback to last successful fit parameters
-      }
-    }
+    //   if ((r.Get() != nullptr) && ((r->Status() % 1000) == 0)) {
+    //      mean = r->Parameter(1);
+    //      sigma = r->Parameter(2);
+    //   } else {
+    //      break; // Fallback to last successful fit parameters
+    //   }
+    // }
 
-        if ((r.Get() == nullptr) || ((r->Status() % 1000) != 0)) {
-      ++fitFailures;
-      continue;
-    }
+    //     if ((r.Get() == nullptr) || ((r->Status() % 1000) != 0)) {
+    //   ++fitFailures;
+    //   continue;
+    // }
 
     // Fill mean
     meanHist->SetBinContent(i, mean);
