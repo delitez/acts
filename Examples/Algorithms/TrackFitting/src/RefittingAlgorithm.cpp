@@ -54,49 +54,47 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
   auto trackStateContainer = std::make_shared<Acts::VectorMultiTrajectory>();
   TrackContainer tracks(trackContainer, trackStateContainer);
 
-    const Acts::Vector3 beamSpotCenter{0., 0., 0.};
+  const Acts::Vector3 beamSpotCenter{0., 0., 0.};
 
-    auto beamSpotVectorTrackStateContainer =
-        std::make_shared<Acts::VectorMultiTrajectory>();
-    auto beamSpotTrackState =
-        beamSpotVectorTrackStateContainer->makeTrackState();
+  auto beamSpotVectorTrackStateContainer =
+      std::make_shared<Acts::VectorMultiTrajectory>();
+  auto beamSpotTrackState = beamSpotVectorTrackStateContainer->makeTrackState();
 
-    const Acts::Vector2 beamSpotMeasValue{0., 0.};
+  const Acts::Vector2 beamSpotMeasValue{0., 0.};
 
-    if (inputTracks.size() == 0) {
-      ACTS_INFO("Input tracks collection is empty");
-      return ProcessCode::SKIP;
-    }
-    auto trackRefSurfacePtr =
-        inputTracks.at(0).referenceSurface().getSharedPtr();
-    beamSpotTrackState.setReferenceSurface(trackRefSurfacePtr);
+  if (inputTracks.size() == 0) {
+    ACTS_INFO("Input tracks collection is empty");
+    return ProcessCode::SKIP;
+  }
+  auto trackRefSurfacePtr = inputTracks.at(0).referenceSurface().getSharedPtr();
+  beamSpotTrackState.setReferenceSurface(trackRefSurfacePtr);
 
-    if (m_cfg.beamSpotConstraint.has_value()) {
-      ACTS_DEBUG("Using provided beam spot constraint matrix");
-      beamSpotTrackState.allocateCalibrated(beamSpotMeasValue, m_cfg.beamSpotConstraint.value());
-    } else {
-      ACTS_DEBUG("No beam spot constraint provided, using zero matrix");
-      beamSpotTrackState.allocateCalibrated(beamSpotMeasValue, Acts::SquareMatrix2::Zero());
-    }
+  if (m_cfg.beamSpotConstraint.has_value()) {
+    ACTS_DEBUG("Using provided beam spot constraint matrix");
+    beamSpotTrackState.allocateCalibrated(beamSpotMeasValue,
+                                          m_cfg.beamSpotConstraint.value());
+  } else {
+    ACTS_DEBUG("No beam spot constraint provided, using zero matrix");
+    beamSpotTrackState.allocateCalibrated(beamSpotMeasValue,
+                                          Acts::SquareMatrix2::Zero());
+  }
 
-    Acts::SourceLink testSL{42};
-    beamSpotTrackState.setUncalibratedSourceLink(std::move(testSL));
+  Acts::SourceLink testSL{42};
+  beamSpotTrackState.setUncalibratedSourceLink(std::move(testSL));
 
-    Acts::SourceLink uncalibSL = beamSpotTrackState.getUncalibratedSourceLink();
+  Acts::SourceLink uncalibSL = beamSpotTrackState.getUncalibratedSourceLink();
 
-    auto beamSpotConstVectorTrackStateContainer =
-        std::make_shared<Acts::ConstVectorMultiTrajectory>(
-            std::move(*beamSpotVectorTrackStateContainer));
+  auto beamSpotConstVectorTrackStateContainer =
+      std::make_shared<Acts::ConstVectorMultiTrajectory>(
+          std::move(*beamSpotVectorTrackStateContainer));
 
-    auto beamSpotConstTrackState =
-        beamSpotConstVectorTrackStateContainer->getTrackState(
-            beamSpotTrackState.index());
-    Acts::SourceLink uncalibSLconst =
-        beamSpotConstTrackState.getUncalibratedSourceLink();
+  auto beamSpotConstTrackState =
+      beamSpotConstVectorTrackStateContainer->getTrackState(
+          beamSpotTrackState.index());
+  Acts::SourceLink uncalibSLconst =
+      beamSpotConstTrackState.getUncalibratedSourceLink();
 
-    RefittingCalibrator::RefittingSourceLink beamSpotSL{
-        beamSpotConstTrackState};
-  
+  RefittingCalibrator::RefittingSourceLink beamSpotSL{beamSpotConstTrackState};
 
   // Perform the fit for each input track
   std::vector<Acts::SourceLink> trackSourceLinks;
@@ -163,7 +161,9 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
 
     std::ranges::reverse(surfSequence);
 
-    ACTS_VERBOSE("Initial parameters: " << track.parameters().transpose());
+    ACTS_VERBOSE("Initial parameters: "
+                 << initialParams.fourPosition(ctx.geoContext).transpose()
+                 << " -> " << initialParams.direction().transpose());
 
     ACTS_DEBUG("Invoke direct fitter for track " << itrack);
     auto result = (*m_cfg.fit)(trackSourceLinks, initialParams, options,
