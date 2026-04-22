@@ -16,6 +16,7 @@
 #include "Acts/EventData/TrackProxy.hpp"
 #include "Acts/EventData/VectorMultiTrajectory.hpp"
 #include "Acts/EventData/VectorTrackContainer.hpp"
+#include "Acts/Surfaces/PerigeeSurface.hpp"
 #include "Acts/Surfaces/Surface.hpp"
 #include "Acts/Utilities/Result.hpp"
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
@@ -53,6 +54,9 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
   auto trackContainer = std::make_shared<Acts::VectorTrackContainer>();
   auto trackStateContainer = std::make_shared<Acts::VectorMultiTrajectory>();
   TrackContainer tracks(trackContainer, trackStateContainer);
+
+  auto perigeeSurface = Acts::Surface::makeShared<Acts::PerigeeSurface>(
+      Acts::Vector3{0., 0., 0.});
 
   const Acts::Vector3 beamSpotCenter{0., 0., 0.};
 
@@ -119,7 +123,8 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
         ctx.geoContext,
         ctx.magFieldContext,
         ctx.calibContext,
-        &track.referenceSurface(),
+        perigeeSurface.get(),  //&track.referenceSurface(), // use the general
+                               //perigee instead track reference surface
         Acts::PropagatorPlainOptions(ctx.geoContext, ctx.magFieldContext),
         true};
 
@@ -156,7 +161,7 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
       beamSpotSL =
           RefittingCalibrator::RefittingSourceLink{beamSpotConstTrackState};
       trackSourceLinks.push_back(Acts::SourceLink{beamSpotSL});
-      surfSequence.push_back(&beamSpotConstTrackState.referenceSurface());
+      surfSequence.push_back(perigeeSurface.get());
     }
 
     std::ranges::reverse(surfSequence);
