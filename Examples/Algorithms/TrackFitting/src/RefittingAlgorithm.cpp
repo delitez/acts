@@ -120,11 +120,9 @@ ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
     }
 
     TrackFitterFunction::GeneralFitterOptions options{
-        ctx.geoContext,
-        ctx.magFieldContext,
-        ctx.calibContext,
+        ctx.geoContext, ctx.magFieldContext, ctx.calibContext,
         perigeeSurface.get(),  //&track.referenceSurface(), // use the general
-                               //perigee instead track reference surface
+                               // perigee instead track reference surface
         Acts::PropagatorPlainOptions(ctx.geoContext, ctx.magFieldContext),
         true};
 
