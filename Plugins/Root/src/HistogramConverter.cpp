@@ -385,9 +385,11 @@ ActsPlugins::extractMeanWidthProfiles(
         iterativeGaussFit(*proj, sigmaRange, iterations, logger);
     if (!fitResult.has_value()) {
       ++fitFailures;
+      ACTS_DEBUG("Failed to fit Gaussian for bin "
+                 << i << ": status "
+                 << (r.Get() != nullptr ? r->Status() : -1));
       continue;
     }
-
     // Fill mean
     meanHist->SetBinContent(i, fitResult.value().mean);
     meanHist->SetBinError(i, fitResult.value().meanError);
