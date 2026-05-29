@@ -12,12 +12,12 @@ from acts.examples.root import (
     RootTrackFitterPerformanceWriter,
 )
 
-from truth_tracking_kalman import runTruthTrackingKalman
+from truth_tracking_ckf import runTruthTrackingCKF
 
 u = acts.UnitConstants
 
 
-def runRefittingKf(
+def runRefittingCkf(
     trackingGeometry: acts.TrackingGeometry,
     field: acts.MagneticFieldProvider,
     digiConfigFile: Path,
@@ -31,7 +31,7 @@ def runRefittingKf(
     s: acts.examples.Sequencer = None,
 ):
     outputDir.mkdir(parents=True, exist_ok=True)
-    s = runTruthTrackingKalman(
+    s = runTruthTrackingCKF(
         trackingGeometry,
         field,
         digiConfigFile=digiConfigFile,
@@ -57,8 +57,10 @@ def runRefittingKf(
     s.addAlgorithm(
         acts.examples.RefittingAlgorithm(
             level=acts.logging.INFO,
-            inputTracks="kf_tracks",
-            outputTracks="kf_refit_tracks",
+            inputTracks="ckf_tracks",
+            outputTracks="ckf_refit_tracks",
+            # inputTracks="kf_tracks",
+            # outputTracks="kf_refit_tracks",
             initialVarInflation=6 * [100.0],
             fit=acts.examples.makeKalmanFitterFunction(
                 trackingGeometry, field, **kalmanOptions
@@ -72,7 +74,7 @@ def runRefittingKf(
     s.addAlgorithm(
         acts.examples.TrackTruthMatcher(
             level=acts.logging.INFO,
-            inputTracks="kf_refit_tracks",
+            inputTracks="ckf_refit_tracks",
             inputParticles="particles_selected",
             inputMeasurementParticlesMap="measurement_particles_map",
             outputTrackParticleMatching="refit_track_particle_matching",
@@ -83,32 +85,32 @@ def runRefittingKf(
     s.addWriter(
         RootTrackStatesWriter(
             level=acts.logging.INFO,
-            inputTracks="kf_refit_tracks",
+            inputTracks="ckf_refit_tracks",
             inputParticles="particles_selected",
             inputTrackParticleMatching="refit_track_particle_matching",
             inputSimHits="simhits",
             inputMeasurementSimHitsMap="measurement_simhits_map",
-            filePath=str(outputDir / "trackstates_kf_refit.root"),
+            filePath=str(outputDir / "trackstates_ckf_refit.root"),
         )
     )
 
     s.addWriter(
         RootTrackSummaryWriter(
             level=acts.logging.INFO,
-            inputTracks="kf_refit_tracks",
+            inputTracks="ckf_refit_tracks",
             inputParticles="particles_selected",
             inputTrackParticleMatching="refit_track_particle_matching",
-            filePath=str(outputDir / "tracksummary_kf_refit.root"),
+            filePath=str(outputDir / "tracksummary_ckf_refit.root"),
         )
     )
 
     s.addWriter(
         RootTrackFitterPerformanceWriter(
             level=acts.logging.INFO,
-            inputTracks="kf_refit_tracks",
+            inputTracks="ckf_refit_tracks",
             inputParticles="particles_selected",
             inputTrackParticleMatching="refit_track_particle_matching",
-            filePath=str(outputDir / "performance_kf_refit.root"),
+            filePath=str(outputDir / "performance_ckf_refit.root"),
         )
     )
 
@@ -161,22 +163,14 @@ if __name__ == "__main__":
 
     srcdir = Path(__file__).resolve().parent.parent.parent.parent
 
-    from acts.examples.odd import getOpenDataDetector, getOpenDataDetectorDirectory
+    # ODD
+    from acts.examples.odd import getOpenDataDetector
 
-    # Get detector and field
-    geoDir = getOpenDataDetectorDirectory()
-
-    # Load material map
-
-    oddMaterialMap = geoDir / "data/odd-material-maps.root"
-    oddDigiConfig = geoDir / "config/odd-digi-smearing-config.json"
-
-    oddSeedingSel = geoDir / "config/odd-seeding-config.json"
-    oddMaterialDeco = acts.IMaterialDecorator.fromFile(oddMaterialMap)
-
-    # Get detector
-    detector = getOpenDataDetector(odd_dir=geoDir, materialDecorator=oddMaterialDeco)
+    detector = getOpenDataDetector()
     trackingGeometry = detector.trackingGeometry()
+    decorators = detector.contextDecorators()
+    digiConfigFile = srcdir / "Examples/Configs/odd-digi-smearing-config.json"
+
     field = detector.field
 
     # field = acts.SolenoidBField(
@@ -185,21 +179,6 @@ if __name__ == "__main__":
     #     bMagCenter=3 * u.T,
     #     nCoils=1194,
     # )
-
-    # solenoid = acts.SolenoidBField(
-    #     radius=1200 * u.mm,
-    #     length=6000 * u.mm,
-    #     bMagCenter=3 * u.T,
-    #     nCoils=1194,
-    # )
-
-    # field = acts.solenoidFieldMap(
-    #     rlim=(0, 1200 * u.mm),
-    #     zlim=(-5000 * u.mm, 5000 * u.mm),
-    #     nbins=(50, 50),
-    #     field=solenoid,
-    # )
-
     if cli_args.edm4hep != [None]:
 
         for edm4hepInput, outputSuffix in collectEdm4hepInputs(cli_args.edm4hep):
@@ -209,10 +188,10 @@ if __name__ == "__main__":
                 else cli_args.output / outputSuffix
             )
 
-            runRefittingKf(
+            runRefittingCkf(
                 trackingGeometry=trackingGeometry,
                 field=field,
-                digiConfigFile=oddDigiConfig,
+                digiConfigFile=digiConfigFile,
                 outputDir=outputDir,
                 inputHitsPath=edm4hepInput,
             ).run()
@@ -220,9 +199,9 @@ if __name__ == "__main__":
     else:
         outputDir = cli_args.output
 
-        runRefittingKf(
+        runRefittingCkf(
             trackingGeometry=trackingGeometry,
             field=field,
-            digiConfigFile=oddDigiConfig,
+            digiConfigFile=digiConfigFile,
             outputDir=outputDir,
         ).run()

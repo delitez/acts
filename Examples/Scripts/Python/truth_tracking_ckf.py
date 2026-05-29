@@ -15,7 +15,7 @@ from acts.examples.edm4hep import (
 u = acts.UnitConstants
 
 
-def runTruthTrackingKalman(
+def runTruthTrackingCKF(
     trackingGeometry: acts.TrackingGeometry,
     field: acts.MagneticFieldProvider,
     digiConfigFile: Path,
@@ -77,7 +77,7 @@ def runTruthTrackingKalman(
 
     logger = acts.getDefaultLogger("Truth tracking example", acts.logging.INFO)
 
-    if inputHitsPath is not None:
+    if inputHitsPath is not [None]:
 
         from acts.examples.odd import getOpenDataDetector
 
@@ -216,20 +216,6 @@ def runTruthTrackingKalman(
         field,
         rnd=rnd,
         inputParticles="particles_generated",
-        seedingAlgorithm=SeedingAlgorithm.TruthSmeared,
-        trackSmearingSigmas=TrackSmearingSigmas(
-            # zero everything so the KF has a chance to find the measurements
-            loc0=0,
-            loc0PtA=0,
-            loc0PtB=0,
-            loc1=0,
-            loc1PtA=0,
-            loc1PtB=0,
-            time=0,
-            phi=0,
-            theta=0,
-            ptRel=0,
-        ),
         particleHypothesis=acts.ParticleHypothesis.muon,
         initialSigmas=[
             1 * u.mm,
@@ -245,14 +231,48 @@ def runTruthTrackingKalman(
         geoSelectionConfigFile=srcdir / "Examples/Configs/odd-seeding-config.json",
     )
 
-    addKalmanTracks(
+    addCKFTracks(
         s,
         trackingGeometry,
         field,
-        reverseFilteringMomThreshold,
-        reverseFilteringCovarianceScaling,
-        linkForward=linkForward,
-        useJosephFormulation=useJosephFormulation,
+        TrackSelectorConfig(
+            pt=(1.0 * u.GeV, None),
+            absEta=(None, 3.0),
+            loc0=(-4.0 * u.mm, 4.0 * u.mm),
+            nMeasurementsMin=7,
+            maxHoles=2,
+            maxOutliers=2,
+        ),
+        CkfConfig(
+            chi2CutOffMeasurement=15.0,
+            chi2CutOffOutlier=25.0,
+            numMeasurementsCutOff=2,
+            # seedDeduplication=True,
+            # stayOnSeed=True,
+            pixelVolumes=[16, 17, 18],
+            stripVolumes=[23, 24, 25],
+            maxPixelHoles=1,
+            maxStripHoles=2,
+            constrainToVolumes=[
+                2,  # beam pipe
+                32,
+                4,  # beam pip gap
+                16,
+                17,
+                18,  # pixel
+                20,  # PST
+                23,
+                24,
+                25,  # short strip
+                26,
+                8,  # long strip gap
+                28,
+                29,
+                30,  # long strip
+            ],
+        ),
+        outputDirRoot=outputDir,
+        writeCovMat=True,
     )
 
     s.addAlgorithm(
@@ -270,32 +290,32 @@ def runTruthTrackingKalman(
     s.addWriter(
         RootTrackStatesWriter(
             level=acts.logging.INFO,
-            inputTracks="tracks",
+            inputTracks="ckf_tracks",
             inputParticles="particles_selected",
             inputTrackParticleMatching="track_particle_matching",
             inputSimHits="simhits",
             inputMeasurementSimHitsMap="measurement_simhits_map",
-            filePath=str(outputDir / "trackstates_kf.root"),
+            filePath=str(outputDir / "trackstates_ckf.root"),
         )
     )
 
     s.addWriter(
         RootTrackSummaryWriter(
             level=acts.logging.INFO,
-            inputTracks="tracks",
+            inputTracks="ckf_tracks",
             inputParticles="particles_selected",
             inputTrackParticleMatching="track_particle_matching",
-            filePath=str(outputDir / "tracksummary_kf.root"),
+            filePath=str(outputDir / "tracksummary_ckf.root"),
         )
     )
 
     s.addWriter(
         RootTrackFitterPerformanceWriter(
             level=acts.logging.INFO,
-            inputTracks="tracks",
+            inputTracks="ckf_tracks",
             inputParticles="particles_selected",
             inputTrackParticleMatching="track_particle_matching",
-            filePath=str(outputDir / "performance_kf.root"),
+            filePath=str(outputDir / "performance_ckf.root"),
         )
     )
 
@@ -306,7 +326,7 @@ if "__main__" == __name__:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Run the truth-tracking Kalman example on one or more EDM4hep files"
+        description="Run the truth-tracking CKF example on one or more EDM4hep files"
     )
     parser.add_argument(
         "--edm4hep",
@@ -327,52 +347,20 @@ if "__main__" == __name__:
 
     srcdir = Path(__file__).resolve().parent.parent.parent.parent
 
-    from acts.examples.odd import getOpenDataDetector, getOpenDataDetectorDirectory
+    # ODD
+    from acts.examples.odd import getOpenDataDetector
 
-    # Get detector and field
-    geoDir = getOpenDataDetectorDirectory()
-
-    # Load material map
-    oddMaterialMap = geoDir / "data/odd-material-maps.root"
-    oddDigiConfig = geoDir / "config/odd-digi-smearing-config.json"
-
-    oddSeedingSel = geoDir / "config/odd-seeding-config.json"
-    oddMaterialDeco = acts.IMaterialDecorator.fromFile(oddMaterialMap)
-
-    oddSeedingSel = geoDir / "config/odd-seeding-config.json"
-    oddMaterialDeco = acts.IMaterialDecorator.fromFile(oddMaterialMap)
-
-    # Get detector
-    detector = getOpenDataDetector(odd_dir=geoDir, materialDecorator=oddMaterialDeco)
+    detector = getOpenDataDetector()
     trackingGeometry = detector.trackingGeometry()
+    digiConfigFile = srcdir / "Examples/Configs/odd-digi-smearing-config.json"
+
+    # field = acts.ConstantBField(acts.Vector3(0, 0, 2 * u.T))
     field = detector.field
-
-    # # ODD
-    # from acts.examples.odd import getOpenDataDetector
-
-    # detector = getOpenDataDetector()
-    # trackingGeometry = detector.trackingGeometry()
-    # digiConfigFile = srcdir / "Examples/Configs/odd-digi-smearing-config.json"
-
     # field = acts.SolenoidBField(
     #     radius=1200 * u.mm,
     #     length=6000 * u.mm,
     #     bMagCenter=3 * u.T,
     #     nCoils=1194,
-    # )
-
-    # solenoid = acts.SolenoidBField(
-    #     radius=1200 * u.mm,
-    #     length=6000 * u.mm,
-    #     bMagCenter=3 * u.T,
-    #     nCoils=1194,
-    # )
-
-    # field = acts.solenoidFieldMap(
-    #     rlim=(0, 1200 * u.mm),
-    #     zlim=(-5000 * u.mm, 5000 * u.mm),
-    #     nbins=(50, 50),
-    #     field=solenoid,
     # )
 
     if cli_args.edm4hep is not None:
@@ -383,20 +371,19 @@ if "__main__" == __name__:
                 else cli_args.output / edm4hepInput.stem
             )
 
-            runTruthTrackingKalman(
+            runTruthTrackingCKF(
                 trackingGeometry=trackingGeometry,
                 field=field,
-                digiConfigFile=oddDigiConfig,
+                digiConfigFile=digiConfigFile,
                 detector=detector,
                 outputDir=outputDir,
                 inputHitsPath=edm4hepInput,
             ).run()
     else:
-        runTruthTrackingKalman(
+        runTruthTrackingCKF(
             trackingGeometry=trackingGeometry,
             field=field,
-            digiConfigFile=oddDigiConfig,
+            digiConfigFile=digiConfigFile,
             detector=detector,
             outputDir=outputDir,
-            inputHitsPath=[None],
         ).run()

@@ -107,7 +107,12 @@ ProcessCode TruthTrackFinder::execute(const AlgorithmContext& ctx) const {
     indices.resize(hits.size());
     std::iota(indices.begin(), indices.end(), 0);
 
+    // Add bounds checking
     std::ranges::sort(indices, [&hits](std::size_t a, std::size_t b) {
+      assert(a < hits.size() && "Index a out of bounds");
+      assert(b < hits.size() && "Index b out of bounds");
+      assert(hits[a] != nullptr && "hits[a] is null");
+      assert(hits[b] != nullptr && "hits[b] is null");
       return hits[a]->time() < hits[b]->time();
     });
     ProtoTrack sortedTrack;
