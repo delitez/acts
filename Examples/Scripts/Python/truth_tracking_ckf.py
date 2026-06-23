@@ -21,7 +21,7 @@ def runTruthTrackingCKF(
     digiConfigFile: Path,
     outputDir: Path,
     inputParticlePath: Optional[Path] = None,
-    inputHitsPath: Optional[Path] = None,
+    inputHitsPath: Optional[Union[Path, list[Path]]] = None,
     decorators=[],
     generatedParticleType: acts.PdgParticle = acts.PdgParticle.eMuon,
     reverseFilteringMomThreshold=0 * u.GeV,
@@ -63,9 +63,12 @@ def runTruthTrackingCKF(
         CkfConfig,
     )
 
-    s = s or acts.examples.Sequencer(
-        events=100, numThreads=-1, logLevel=acts.logging.INFO
-    )
+    if s is None:
+        s = acts.examples.Sequencer(
+            events=128,
+            numThreads=1 if inputHitsPath is not None else -1,
+            logLevel=acts.logging.INFO,
+        )
 
     srcdir = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -77,18 +80,17 @@ def runTruthTrackingCKF(
 
     logger = acts.getDefaultLogger("Truth tracking example", acts.logging.INFO)
 
-    if inputHitsPath is not [None]:
-
-        from acts.examples.odd import getOpenDataDetector
+    if inputHitsPath is not None:
+        inputHitsFiles = (
+            [inputHitsPath] if isinstance(inputHitsPath, Path) else inputHitsPath
+        )
 
         detector = getOpenDataDetector()
-        trackingGeometry = detector.trackingGeometry()
-        digiConfigFile = srcdir / "Examples/Configs/odd-digi-smearing-config.json"
-        inputFile = Path(inputHitsPath)
+        # reader takes a vector of paths, so we can pass the list directly.
         s.addReader(
             PodioReader(
-                level=acts.logging.INFO,
-                inputPath=str(inputFile),
+                level=acts.logging.DEBUG,
+                inputPath=[str(path) for path in inputHitsFiles],
                 outputFrame="events",
                 category="events",
             )
@@ -347,15 +349,33 @@ if "__main__" == __name__:
 
     srcdir = Path(__file__).resolve().parent.parent.parent.parent
 
-    # ODD
-    from acts.examples.odd import getOpenDataDetector
+    from acts.examples.odd import getOpenDataDetector, getOpenDataDetectorDirectory
 
-    detector = getOpenDataDetector()
+    # Get detector and field
+    geoDir = getOpenDataDetectorDirectory()
+
+    # Load material map
+    oddMaterialMap = geoDir / "data/odd-material-maps.root"
+    oddDigiConfig = geoDir / "config/odd-digi-smearing-config.json"
+
+    oddSeedingSel = geoDir / "config/odd-seeding-config.json"
+    oddMaterialDeco = acts.IMaterialDecorator.fromFile(oddMaterialMap)
+
+    oddSeedingSel = geoDir / "config/odd-seeding-config.json"
+    oddMaterialDeco = acts.IMaterialDecorator.fromFile(oddMaterialMap)
+
+    # Get detector
+    detector = getOpenDataDetector(odd_dir=geoDir, materialDecorator=oddMaterialDeco)
     trackingGeometry = detector.trackingGeometry()
-    digiConfigFile = srcdir / "Examples/Configs/odd-digi-smearing-config.json"
-
-    # field = acts.ConstantBField(acts.Vector3(0, 0, 2 * u.T))
     field = detector.field
+
+    # # ODD
+    # from acts.examples.odd import getOpenDataDetector
+
+    # detector = getOpenDataDetector()
+    # trackingGeometry = detector.trackingGeometry()
+    # digiConfigFile = srcdir / "Examples/Configs/odd-digi-smearing-config.json"
+
     # field = acts.SolenoidBField(
     #     radius=1200 * u.mm,
     #     length=6000 * u.mm,
@@ -363,27 +383,25 @@ if "__main__" == __name__:
     #     nCoils=1194,
     # )
 
-    if cli_args.edm4hep is not None:
-        for edm4hepInput in cli_args.edm4hep:
-            outputDir = (
-                cli_args.output
-                if len(cli_args.edm4hep) == 1
-                else cli_args.output / edm4hepInput.stem
-            )
+    # solenoid = acts.SolenoidBField(
+    #     radius=1200 * u.mm,
+    #     length=6000 * u.mm,
+    #     bMagCenter=3 * u.T,
+    #     nCoils=1194,
+    # )
 
-            runTruthTrackingCKF(
-                trackingGeometry=trackingGeometry,
-                field=field,
-                digiConfigFile=digiConfigFile,
-                detector=detector,
-                outputDir=outputDir,
-                inputHitsPath=edm4hepInput,
-            ).run()
-    else:
-        runTruthTrackingCKF(
+    # field = acts.solenoidFieldMap(
+    #     rlim=(0, 1200 * u.mm),
+    #     zlim=(-5000 * u.mm, 5000 * u.mm),
+    #     nbins=(50, 50),
+    #     field=solenoid,
+    # )
+
+    if cli_args.edm4hep:
+        runTruthTrackingKalman(
             trackingGeometry=trackingGeometry,
             field=field,
-            digiConfigFile=digiConfigFile,
-            detector=detector,
-            outputDir=outputDir,
+            digiConfigFile=oddDigiConfig,
+            outputDir=cli_args.output,
+            inputHitsPath=cli_args.edm4hep,
         ).run()

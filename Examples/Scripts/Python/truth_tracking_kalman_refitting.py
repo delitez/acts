@@ -22,13 +22,14 @@ def runRefittingKf(
     field: acts.MagneticFieldProvider,
     digiConfigFile: Path,
     outputDir: Path,
-    inputHitsPath: Optional[Path] = None,
+    inputHitsPath: Optional[list[Path]] = None,
     multipleScattering: bool = True,
     energyLoss: bool = True,
     reverseFilteringMomThreshold=float("inf"),
     reverseFilteringCovarianceScaling=100.0,
     useJosephFormulation: bool = False,
     s: acts.examples.Sequencer = None,
+    args: argparse.Namespace = None,
 ):
     outputDir.mkdir(parents=True, exist_ok=True)
     s = runTruthTrackingKalman(
@@ -41,6 +42,7 @@ def runRefittingKf(
         reverseFilteringCovarianceScaling=reverseFilteringCovarianceScaling,
         useJosephFormulation=useJosephFormulation,
         s=s,
+        args=args,
     )
 
     kalmanOptions = {
@@ -80,27 +82,27 @@ def runRefittingKf(
         )
     )
 
-    s.addWriter(
-        RootTrackStatesWriter(
-            level=acts.logging.INFO,
-            inputTracks="kf_refit_tracks",
-            inputParticles="particles_selected",
-            inputTrackParticleMatching="refit_track_particle_matching",
-            inputSimHits="simhits",
-            inputMeasurementSimHitsMap="measurement_simhits_map",
-            filePath=str(outputDir / "trackstates_kf_refit.root"),
-        )
-    )
+    # s.addWriter(
+    #     RootTrackStatesWriter(
+    #         level=acts.logging.INFO,
+    #         inputTracks="kf_refit_tracks",
+    #         inputParticles="particles_selected",
+    #         inputTrackParticleMatching="refit_track_particle_matching",
+    #         inputSimHits="simhits",
+    #         inputMeasurementSimHitsMap="measurement_simhits_map",
+    #         filePath=str(outputDir / "trackstates_kf_refit.root"),
+    #     )
+    # )
 
-    s.addWriter(
-        RootTrackSummaryWriter(
-            level=acts.logging.INFO,
-            inputTracks="kf_refit_tracks",
-            inputParticles="particles_selected",
-            inputTrackParticleMatching="refit_track_particle_matching",
-            filePath=str(outputDir / "tracksummary_kf_refit.root"),
-        )
-    )
+    # s.addWriter(
+    #     RootTrackSummaryWriter(
+    #         level=acts.logging.INFO,
+    #         inputTracks="kf_refit_tracks",
+    #         inputParticles="particles_selected",
+    #         inputTrackParticleMatching="refit_track_particle_matching",
+    #         filePath=str(outputDir / "tracksummary_kf_refit.root"),
+    #     )
+    # )
 
     s.addWriter(
         RootTrackFitterPerformanceWriter(
@@ -150,6 +152,26 @@ if __name__ == "__main__":
         help="One or more EDM4hep input files or directories containing edm4hep.root files",
     )
     parser.add_argument(
+        "--fullsim",
+        action="store_true",
+        help="Run with Geant4 simulation instead of EDM4hep input",
+    )
+    parser.add_argument(
+        "--fatras",
+        action="store_true",
+        help="Run with Fatras simulation instead of EDM4hep input",
+    )
+    parser.add_argument(
+        "--ttbar",
+        action="store_true",
+        help="Run with Pythia8 ttbar events instead of EDM4hep input",
+    )
+    parser.add_argument(
+        "--particleGun",
+        action="store_true",
+        help="Run with particle gun instead of EDM4hep input",
+    )
+    parser.add_argument(
         "--output",
         "-o",
         type=Path,
@@ -157,7 +179,7 @@ if __name__ == "__main__":
         help="Output directory",
     )
 
-    cli_args = parser.parse_args()
+    args = parser.parse_args()
 
     srcdir = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -179,6 +201,15 @@ if __name__ == "__main__":
     trackingGeometry = detector.trackingGeometry()
     field = detector.field
 
+    runRefittingKf(
+        trackingGeometry=trackingGeometry,
+        field=field,
+        digiConfigFile=oddDigiConfig,
+        outputDir=args.output,
+        # inputHitsPath=args.edm4hep,
+        args=args,
+    ).run()
+
     # field = acts.SolenoidBField(
     #     radius=1200 * u.mm,
     #     length=6000 * u.mm,
@@ -199,30 +230,3 @@ if __name__ == "__main__":
     #     nbins=(50, 50),
     #     field=solenoid,
     # )
-
-    if cli_args.edm4hep != [None]:
-
-        for edm4hepInput, outputSuffix in collectEdm4hepInputs(cli_args.edm4hep):
-            outputDir = (
-                cli_args.output
-                if len(cli_args.edm4hep) == 1 and not cli_args.edm4hep[0].is_dir()
-                else cli_args.output / outputSuffix
-            )
-
-            runRefittingKf(
-                trackingGeometry=trackingGeometry,
-                field=field,
-                digiConfigFile=oddDigiConfig,
-                outputDir=outputDir,
-                inputHitsPath=edm4hepInput,
-            ).run()
-
-    else:
-        outputDir = cli_args.output
-
-        runRefittingKf(
-            trackingGeometry=trackingGeometry,
-            field=field,
-            digiConfigFile=oddDigiConfig,
-            outputDir=outputDir,
-        ).run()

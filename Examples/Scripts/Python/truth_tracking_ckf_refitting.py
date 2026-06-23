@@ -22,7 +22,7 @@ def runRefittingCkf(
     field: acts.MagneticFieldProvider,
     digiConfigFile: Path,
     outputDir: Path,
-    inputHitsPath: Optional[Path] = None,
+    inputHitsPath: Optional[list[Path]] = None,
     multipleScattering: bool = True,
     energyLoss: bool = True,
     reverseFilteringMomThreshold=float("inf"),
@@ -142,7 +142,7 @@ def collectEdm4hepInputs(inputPaths: list[Path]) -> list[tuple[Path, Path]]:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Run truth tracking Kalman refitting on one or more EDM4hep files"
+        description="Run truth tracking CKF refitting on one or more EDM4hep files"
     )
     parser.add_argument(
         "--edm4hep",
@@ -163,14 +163,22 @@ if __name__ == "__main__":
 
     srcdir = Path(__file__).resolve().parent.parent.parent.parent
 
-    # ODD
-    from acts.examples.odd import getOpenDataDetector
+    from acts.examples.odd import getOpenDataDetector, getOpenDataDetectorDirectory
 
-    detector = getOpenDataDetector()
+    # Get detector and field
+    geoDir = getOpenDataDetectorDirectory()
+
+    # Load material map
+
+    oddMaterialMap = geoDir / "data/odd-material-maps.root"
+    oddDigiConfig = geoDir / "config/odd-digi-smearing-config.json"
+
+    oddSeedingSel = geoDir / "config/odd-seeding-config.json"
+    oddMaterialDeco = acts.IMaterialDecorator.fromFile(oddMaterialMap)
+
+    # Get detector
+    detector = getOpenDataDetector(odd_dir=geoDir, materialDecorator=oddMaterialDeco)
     trackingGeometry = detector.trackingGeometry()
-    decorators = detector.contextDecorators()
-    digiConfigFile = srcdir / "Examples/Configs/odd-digi-smearing-config.json"
-
     field = detector.field
 
     # field = acts.SolenoidBField(
@@ -179,29 +187,26 @@ if __name__ == "__main__":
     #     bMagCenter=3 * u.T,
     #     nCoils=1194,
     # )
-    if cli_args.edm4hep != [None]:
 
-        for edm4hepInput, outputSuffix in collectEdm4hepInputs(cli_args.edm4hep):
-            outputDir = (
-                cli_args.output
-                if len(cli_args.edm4hep) == 1 and not cli_args.edm4hep[0].is_dir()
-                else cli_args.output / outputSuffix
-            )
+    # solenoid = acts.SolenoidBField(
+    #     radius=1200 * u.mm,
+    #     length=6000 * u.mm,
+    #     bMagCenter=3 * u.T,
+    #     nCoils=1194,
+    # )
 
-            runRefittingCkf(
-                trackingGeometry=trackingGeometry,
-                field=field,
-                digiConfigFile=digiConfigFile,
-                outputDir=outputDir,
-                inputHitsPath=edm4hepInput,
-            ).run()
+    # field = acts.solenoidFieldMap(
+    #     rlim=(0, 1200 * u.mm),
+    #     zlim=(-5000 * u.mm, 5000 * u.mm),
+    #     nbins=(50, 50),
+    #     field=solenoid,
+    # )
 
-    else:
-        outputDir = cli_args.output
-
+    if cli_args.edm4hep:
         runRefittingCkf(
             trackingGeometry=trackingGeometry,
             field=field,
-            digiConfigFile=digiConfigFile,
-            outputDir=outputDir,
+            digiConfigFile=oddDigiConfig,
+            outputDir=cli_args.output,
+            inputHitsPath=cli_args.edm4hep,
         ).run()

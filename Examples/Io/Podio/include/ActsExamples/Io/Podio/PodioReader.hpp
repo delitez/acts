@@ -31,7 +31,7 @@ class PodioReader : public IReader {
  public:
   struct Config {
     /// The path to the PODIO file to read.
-    std::filesystem::path inputPath;
+    std::vector<std::filesystem::path> inputPath;
     /// The name of the frame to write to the event store.
     std::string outputFrame = "events";
     /// The podio `category` name to read the frame from.

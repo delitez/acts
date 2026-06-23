@@ -25,8 +25,14 @@ class PodioReader::Impl {
       : m_frameWriteHandle(&parent, "EDM4hepFrameOutput"),
         m_cfg(std::move(cfg)) {
     m_eventsRange = std::make_pair(0, reader().getEntries("events"));
-    if (!std::filesystem::exists(m_cfg.inputPath)) {
-      throw std::invalid_argument("Input file does not exist");
+    if (m_cfg.inputPath.empty()) {
+      throw std::invalid_argument("Input path is not set");
+    }
+    for (const auto& path : m_cfg.inputPath) {
+      if (!std::filesystem::exists(path)) {
+        throw std::invalid_argument("Input file does not exist");
+      }
+      std::cout << "Opened input file: " << path << std::endl;
     }
     if (m_cfg.outputFrame.empty()) {
       throw std::invalid_argument("Output frame name is not set");
@@ -42,7 +48,10 @@ class PodioReader::Impl {
     bool exists = false;
     auto& reader = m_reader.local(exists);
     if (!exists) {
-      reader.openFile(m_cfg.inputPath);
+      // Open each file in the input path vector
+      for (const auto& path : m_cfg.inputPath) {
+        reader.openFile(path);
+      }
     }
 
     return reader;
