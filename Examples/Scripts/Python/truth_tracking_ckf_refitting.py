@@ -17,7 +17,7 @@ from truth_tracking_ckf import runTruthTrackingCKF
 u = acts.UnitConstants
 
 
-def runRefittingCkf(
+def runRefittingCKF(
     trackingGeometry: acts.TrackingGeometry,
     field: acts.MagneticFieldProvider,
     digiConfigFile: Path,
@@ -29,6 +29,7 @@ def runRefittingCkf(
     reverseFilteringCovarianceScaling=100.0,
     useJosephFormulation: bool = False,
     s: acts.examples.Sequencer = None,
+    args: argparse.Namespace = None,
 ):
     outputDir.mkdir(parents=True, exist_ok=True)
     s = runTruthTrackingCKF(
@@ -41,6 +42,7 @@ def runRefittingCkf(
         reverseFilteringCovarianceScaling=reverseFilteringCovarianceScaling,
         useJosephFormulation=useJosephFormulation,
         s=s,
+        args=args,
     )
 
     kalmanOptions = {
@@ -59,14 +61,12 @@ def runRefittingCkf(
             level=acts.logging.INFO,
             inputTracks="ckf_tracks",
             outputTracks="ckf_refit_tracks",
-            # inputTracks="kf_tracks",
-            # outputTracks="kf_refit_tracks",
             initialVarInflation=6 * [100.0],
             fit=acts.examples.makeKalmanFitterFunction(
                 trackingGeometry, field, **kalmanOptions
             ),
             beamSpotConstraint=acts.SquareMatrix2(
-                [[0.0125 * u.mm, 0], [0, 55.5 * u.mm]]
+                [[(0.0125 * u.mm) ** 2, 0], [0, (55.5 * u.mm) ** 2]]
             ),
         )
     )
@@ -82,27 +82,27 @@ def runRefittingCkf(
         )
     )
 
-    s.addWriter(
-        RootTrackStatesWriter(
-            level=acts.logging.INFO,
-            inputTracks="ckf_refit_tracks",
-            inputParticles="particles_selected",
-            inputTrackParticleMatching="refit_track_particle_matching",
-            inputSimHits="simhits",
-            inputMeasurementSimHitsMap="measurement_simhits_map",
-            filePath=str(outputDir / "trackstates_ckf_refit.root"),
-        )
-    )
+    # s.addWriter(
+    #     RootTrackStatesWriter(
+    #         level=acts.logging.INFO,
+    #         inputTracks="ckf_refit_tracks",
+    #         inputParticles="particles_selected",
+    #         inputTrackParticleMatching="refit_track_particle_matching",
+    #         inputSimHits="simhits",
+    #         inputMeasurementSimHitsMap="measurement_simhits_map",
+    #         filePath=str(outputDir / "trackstates_ckf_refit.root"),
+    #     )
+    # )
 
-    s.addWriter(
-        RootTrackSummaryWriter(
-            level=acts.logging.INFO,
-            inputTracks="ckf_refit_tracks",
-            inputParticles="particles_selected",
-            inputTrackParticleMatching="refit_track_particle_matching",
-            filePath=str(outputDir / "tracksummary_ckf_refit.root"),
-        )
-    )
+    # s.addWriter(
+    #     RootTrackSummaryWriter(
+    #         level=acts.logging.INFO,
+    #         inputTracks="ckf_refit_tracks",
+    #         inputParticles="particles_selected",
+    #         inputTrackParticleMatching="refit_track_particle_matching",
+    #         filePath=str(outputDir / "tracksummary_ckf_refit.root"),
+    #     )
+    # )
 
     s.addWriter(
         RootTrackFitterPerformanceWriter(
@@ -152,6 +152,26 @@ if __name__ == "__main__":
         help="One or more EDM4hep input files or directories containing edm4hep.root files",
     )
     parser.add_argument(
+        "--fullsim",
+        action="store_true",
+        help="Run with Geant4 simulation instead of EDM4hep input",
+    )
+    parser.add_argument(
+        "--fatras",
+        action="store_true",
+        help="Run with Fatras simulation instead of EDM4hep input",
+    )
+    parser.add_argument(
+        "--ttbar",
+        action="store_true",
+        help="Run with Pythia8 ttbar events instead of EDM4hep input",
+    )
+    parser.add_argument(
+        "--particleGun",
+        action="store_true",
+        help="Run with particle gun instead of EDM4hep input",
+    )
+    parser.add_argument(
         "--output",
         "-o",
         type=Path,
@@ -159,7 +179,7 @@ if __name__ == "__main__":
         help="Output directory",
     )
 
-    cli_args = parser.parse_args()
+    args = parser.parse_args()
 
     srcdir = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -181,6 +201,15 @@ if __name__ == "__main__":
     trackingGeometry = detector.trackingGeometry()
     field = detector.field
 
+    runRefittingCKF(
+        trackingGeometry=trackingGeometry,
+        field=field,
+        digiConfigFile=oddDigiConfig,
+        outputDir=args.output,
+        # inputHitsPath=args.edm4hep,
+        args=args,
+    ).run()
+
     # field = acts.SolenoidBField(
     #     radius=1200 * u.mm,
     #     length=6000 * u.mm,
@@ -201,12 +230,3 @@ if __name__ == "__main__":
     #     nbins=(50, 50),
     #     field=solenoid,
     # )
-
-    if cli_args.edm4hep:
-        runRefittingCkf(
-            trackingGeometry=trackingGeometry,
-            field=field,
-            digiConfigFile=oddDigiConfig,
-            outputDir=cli_args.output,
-            inputHitsPath=cli_args.edm4hep,
-        ).run()

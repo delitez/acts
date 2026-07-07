@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
+import argparse
 
+from acts.examples.odd import getOpenDataDetector
 import acts
 import acts.examples
 from acts.examples.edm4hep import (
@@ -30,6 +32,7 @@ def runTruthTrackingCKF(
     linkForward: bool = False,
     useJosephFormulation: bool = False,
     s: acts.examples.Sequencer = None,
+    args: argparse.Namespace = None,
 ):
     from acts.examples.simulation import (
         addParticleGun,
@@ -37,8 +40,10 @@ def runTruthTrackingCKF(
         EtaConfig,
         PhiConfig,
         MomentumConfig,
+        addGenParticleSelection,
         addFatras,
         addPythia8,
+        addGeant4,
         addDigitization,
         addSimParticleSelection,
         ParticleSelectorConfig,
@@ -65,8 +70,8 @@ def runTruthTrackingCKF(
 
     if s is None:
         s = acts.examples.Sequencer(
-            events=128,
-            numThreads=1 if inputHitsPath is not None else -1,
+            events=200,
+            numThreads=-1,
             logLevel=acts.logging.INFO,
         )
 
@@ -80,119 +85,147 @@ def runTruthTrackingCKF(
 
     logger = acts.getDefaultLogger("Truth tracking example", acts.logging.INFO)
 
-    if inputHitsPath is not None:
-        inputHitsFiles = (
-            [inputHitsPath] if isinstance(inputHitsPath, Path) else inputHitsPath
+    if args.edm4hep:
+        print(
+            "Running truth tracking Kalman refitting on EDM4hep input files:",
+            args.edm4hep,
         )
-
-        detector = getOpenDataDetector()
-        # reader takes a vector of paths, so we can pass the list directly.
-        s.addReader(
-            PodioReader(
-                level=acts.logging.DEBUG,
-                inputPath=[str(path) for path in inputHitsFiles],
-                outputFrame="events",
-                category="events",
+        ## Read both particles and hits from EDM4hep input
+        if inputHitsPath is not None:
+            inputHitsFiles = (
+                [inputHitsPath] if isinstance(inputHitsPath, Path) else inputHitsPath
             )
-        )
+            detector = getOpenDataDetector()
+            # reader takes a vector of paths, so we can pass the list directly.
+            s.addReader(
+                PodioReader(
+                    level=acts.logging.DEBUG,
+                    inputPath=[str(path) for path in inputHitsFiles],
+                    outputFrame="events",
+                    category="events",
+                )
+            )
+            edm4hepReader = acts.examples.edm4hep.EDM4hepSimInputConverter(
+                inputFrame="events",
+                inputSimHits=[
+                    "PixelBarrelReadout",
+                    "PixelEndcapReadout",
+                    "ShortStripBarrelReadout",
+                    "ShortStripEndcapReadout",
+                    "LongStripBarrelReadout",
+                    "LongStripEndcapReadout",
+                ],
+                outputParticlesGenerator="particles_generated",
+                outputParticlesSimulation="particles_simulated",
+                outputSimHits="simhits",
+                outputSimVertices="vertices_truth",
+                dd4hepDetector=detector,
+                trackingGeometry=trackingGeometry,
+                sortSimHitsInTime=False,
+                particleRMax=1080 * u.mm,
+                particleZ=(-3030 * u.mm, 3030 * u.mm),
+                particlePtMin=150 * u.MeV,
+                level=acts.logging.INFO,
+            )
+            s.addAlgorithm(edm4hepReader)
 
-        edm4hepReader = acts.examples.edm4hep.EDM4hepSimInputConverter(
-            inputFrame="events",
-            inputSimHits=[
-                "PixelBarrelReadout",
-                "PixelEndcapReadout",
-                "ShortStripBarrelReadout",
-                "ShortStripEndcapReadout",
-                "LongStripBarrelReadout",
-                "LongStripEndcapReadout",
-            ],
-            outputParticlesGenerator="particles_generated",
-            outputParticlesSimulation="particles_simulated",
-            outputSimHits="simhits",
-            outputSimVertices="vertices_truth",
-            dd4hepDetector=detector,
-            trackingGeometry=trackingGeometry,
-            sortSimHitsInTime=False,
-            particleRMax=1080 * u.mm,
-            particleZ=(-3030 * u.mm, 3030 * u.mm),
-            particlePtMin=150 * u.MeV,
-            level=acts.logging.INFO,
-        )
-        s.addAlgorithm(edm4hepReader)
+            s.addWhiteboardAlias(
+                "particles", edm4hepReader.config.outputParticlesSimulation
+            )
 
-        s.addWhiteboardAlias(
-            "particles", edm4hepReader.config.outputParticlesSimulation
+            addSimParticleSelection(
+                s,
+                ParticleSelectorConfig(
+                    rho=(0.0, 24 * u.mm),
+                    absZ=(0.0, 1.0 * u.m),
+                    eta=(-3.0, 3.0),
+                    removeNeutral=True,
+                ),
+            )
+    if args.ttbar:
+        addPythia8(
+            s,
+            hardProcess=["Top:qqbar2ttbar=on"],
+            npileup=200,
+            vtxGen=acts.examples.GaussianVertexGenerator(
+                mean=acts.Vector4(0, 0, 0, 0),
+                stddev=acts.Vector4(
+                    0.0125 * u.mm, 0.0125 * u.mm, 55.5 * u.mm, 5.0 * u.ns
+                ),
+            ),
+            rnd=rnd,
         )
-
-        addSimParticleSelection(
+        addGenParticleSelection(
             s,
             ParticleSelectorConfig(
                 rho=(0.0, 24 * u.mm),
                 absZ=(0.0, 1.0 * u.m),
                 eta=(-3.0, 3.0),
-                removeNeutral=True,
+                pt=(150 * u.MeV, None),
             ),
         )
-    else:
-        if inputParticlePath is None:
-            addPythia8(
-                s,
-                hardProcess=["Top:qqbar2ttbar=on"],
-                npileup=200,
-                vtxGen=acts.examples.GaussianVertexGenerator(
-                    mean=acts.Vector4(0, 0, 0, 0),
-                    stddev=acts.Vector4(
-                        0.0125 * u.mm, 0.0125 * u.mm, 55.5 * u.mm, 5.0 * u.ns
-                    ),
-                ),
-                rnd=rnd,
-            )
-            # addParticleGun(
-            #     s,
-            #     ParticleConfig(
-            #         num=numParticles, pdg=generatedParticleType, randomizeCharge=True
-            #     ),
-            #     EtaConfig(-3.0, 3.0, uniform=True),
-            #     MomentumConfig(1.0 * u.GeV, 100.0 * u.GeV, transverse=True),
-            #     PhiConfig(0.0, 360.0 * u.degree),
-            #     vtxGen=acts.examples.GaussianVertexGenerator(
-            #         mean=acts.Vector4(0, 0, 0, 0),
-            #         stddev=acts.Vector4(0, 0, 0, 0),
-            #     ),
-            #     multiplicity=1,
-            #     rnd=rnd,
-            # )
-        else:
-            logger.info("Reading particles from {}", inputParticlePath.resolve())
-            assert inputParticlePath.exists()
-            s.addReader(
-                RootParticleReader(
-                    level=acts.logging.INFO,
-                    filePath=str(inputParticlePath.resolve()),
-                    outputParticles="particles_generated",
-                )
-            )
-            s.addWhiteboardAlias("particles", "particles_generated")
+    if args.particleGun:
+        addParticleGun(
+            s,
+            ParticleConfig(
+                num=numParticles, pdg=generatedParticleType, randomizeCharge=True
+            ),
+            EtaConfig(-3.0, 3.0, uniform=True),
+            MomentumConfig(1.0 * u.GeV, 100.0 * u.GeV, transverse=True),
+            PhiConfig(0.0, 360.0 * u.degree),
+            vtxGen=acts.examples.GaussianVertexGenerator(
+                mean=acts.Vector4(0, 0, 0, 0),
+                stddev=acts.Vector4(0, 0, 0, 0),
+            ),
+            multiplicity=1,
+            rnd=rnd,
+        )
+    # else:
+    #     logger.info("Reading particles from {}", inputParticlePath.resolve())
+    #     assert inputParticlePath.exists()
+    #     s.addReader(
+    #             RootParticleReader(
+    #                 level=acts.logging.INFO,
+    #                 filePath=str(inputParticlePath.resolve()),
+    #                 outputParticles="particles_generated",
+    #             )
+    #         )
+    #     s.addWhiteboardAlias("particles", "particles_generated")
 
-        if inputHitsPath is None:
-            addFatras(
-                s,
-                trackingGeometry,
-                field,
-                rnd=rnd,
-                enableInteractions=True,
-            )
-        else:
-            logger.info("Reading hits from {}", inputHitsPath.resolve())
-            assert inputHitsPath.exists()
-            s.addReader(
-                RootSimHitReader(
-                    level=acts.logging.INFO,
-                    filePath=str(inputHitsPath.resolve()),
-                    outputSimHits="simhits",
-                )
-            )
-            s.addWhiteboardAlias("particles_simulated_selected", "particles_generated")
+    if args.fullsim:
+        if s.config.numThreads != 1:
+            raise ValueError("Geant 4 simulation does not support multi-threading")
+        detector = getOpenDataDetector()
+        addGeant4(
+            s,
+            detector,
+            trackingGeometry,
+            field,
+            rnd=rnd,
+            killVolume=trackingGeometry.highestTrackingVolume,
+            killAfterTime=25 * u.ns,
+            killSecondaries=True,
+            logLevel=acts.logging.INFO,
+        )
+    if args.fatras:
+        addFatras(
+            s,
+            trackingGeometry,
+            field,
+            rnd=rnd,
+            enableInteractions=True,
+        )
+    # else:
+    #     logger.info("Reading hits from {}", inputHitsPath.resolve())
+    #     assert inputHitsPath.exists()
+    #     s.addReader(
+    #             RootSimHitReader(
+    #                 level=acts.logging.INFO,
+    #                 filePath=str(inputHitsPath.resolve()),
+    #                 outputSimHits="simhits",
+    #             )
+    #         )
+    #     s.addWhiteboardAlias("particles_simulated_selected", "particles_generated")
 
     addDigitization(
         s,
@@ -218,6 +251,20 @@ def runTruthTrackingCKF(
         field,
         rnd=rnd,
         inputParticles="particles_generated",
+        seedingAlgorithm=SeedingAlgorithm.TruthSmeared,
+        trackSmearingSigmas=TrackSmearingSigmas(
+            # zero everything so the KF has a chance to find the measurements
+            loc0=0,
+            loc0PtA=0,
+            loc0PtB=0,
+            loc1=0,
+            loc1PtA=0,
+            loc1PtB=0,
+            time=0,
+            phi=0,
+            theta=0,
+            ptRel=0,
+        ),
         particleHypothesis=acts.ParticleHypothesis.muon,
         initialSigmas=[
             1 * u.mm,
@@ -328,7 +375,7 @@ if "__main__" == __name__:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Run the truth-tracking CKF example on one or more EDM4hep files"
+        description="Run the truth-tracking Kalman example on one or more EDM4hep files"
     )
     parser.add_argument(
         "--edm4hep",
@@ -338,6 +385,26 @@ if "__main__" == __name__:
         help="One or more EDM4hep input files",
     )
     parser.add_argument(
+        "--fullsim",
+        action="store_true",
+        help="Run with Geant4 simulation instead of EDM4hep input",
+    )
+    parser.add_argument(
+        "--fatras",
+        action="store_true",
+        help="Run with Fatras simulation instead of EDM4hep input",
+    )
+    parser.add_argument(
+        "--ttbar",
+        action="store_true",
+        help="Run with Pythia8 ttbar events instead of EDM4hep input",
+    )
+    parser.add_argument(
+        "--particleGun",
+        action="store_true",
+        help="Run with particle gun instead of EDM4hep input",
+    )
+    parser.add_argument(
         "--output",
         "-o",
         type=Path,
@@ -345,7 +412,7 @@ if "__main__" == __name__:
         help="Output directory",
     )
 
-    cli_args = parser.parse_args()
+    args = parser.parse_args()
 
     srcdir = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -369,39 +436,11 @@ if "__main__" == __name__:
     trackingGeometry = detector.trackingGeometry()
     field = detector.field
 
-    # # ODD
-    # from acts.examples.odd import getOpenDataDetector
-
-    # detector = getOpenDataDetector()
-    # trackingGeometry = detector.trackingGeometry()
-    # digiConfigFile = srcdir / "Examples/Configs/odd-digi-smearing-config.json"
-
-    # field = acts.SolenoidBField(
-    #     radius=1200 * u.mm,
-    #     length=6000 * u.mm,
-    #     bMagCenter=3 * u.T,
-    #     nCoils=1194,
-    # )
-
-    # solenoid = acts.SolenoidBField(
-    #     radius=1200 * u.mm,
-    #     length=6000 * u.mm,
-    #     bMagCenter=3 * u.T,
-    #     nCoils=1194,
-    # )
-
-    # field = acts.solenoidFieldMap(
-    #     rlim=(0, 1200 * u.mm),
-    #     zlim=(-5000 * u.mm, 5000 * u.mm),
-    #     nbins=(50, 50),
-    #     field=solenoid,
-    # )
-
-    if cli_args.edm4hep:
-        runTruthTrackingKalman(
-            trackingGeometry=trackingGeometry,
-            field=field,
-            digiConfigFile=oddDigiConfig,
-            outputDir=cli_args.output,
-            inputHitsPath=cli_args.edm4hep,
-        ).run()
+    runTruthTrackingCKF(
+        trackingGeometry=trackingGeometry,
+        field=field,
+        digiConfigFile=oddDigiConfig,
+        outputDir=args.output,
+        inputHitsPath=args.edm4hep,
+        args=args,
+    ).run()

@@ -66,7 +66,7 @@ def runRefittingKf(
                 trackingGeometry, field, **kalmanOptions
             ),
             beamSpotConstraint=acts.SquareMatrix2(
-                [[0.0125 * u.mm, 0], [0, 55.5 * u.mm]]
+                [[(0.0125 * u.mm) ** 2, 0], [0, (55.5 * u.mm) ** 2]]
             ),
         )
     )
