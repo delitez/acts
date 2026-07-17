@@ -93,6 +93,9 @@ DigitizationAlgorithm::DigitizationAlgorithm(
 
   // Create the digitizers from the configuration
   std::vector<std::pair<Acts::GeometryIdentifier, Digitizer>> digitizerInput;
+  std::unordered_map<const DigiComponentsConfig*,
+                     std::shared_ptr<DigitizationDesign>>
+      configToDesign;
 
   for (std::size_t i = 0; i < m_cfg.digitizationConfigs.size(); ++i) {
     GeometricConfig geoCfg;
@@ -118,38 +121,41 @@ DigitizationAlgorithm::DigitizationAlgorithm(
       throw std::invalid_argument(
           "Digitization configuration contains duplicate parameter indices");
     }
-
+    std::shared_ptr<Digitizer> digi;
     switch (smCfg.params.size()) {
       case 0u:
-        digitizerInput.emplace_back(geoId, makeDigitizer<0u>(digiCfg));
+        digi = std::make_shared<Digitizer>(makeDigitizer<0u>(digiCfg));
         break;
       case 1u:
-        digitizerInput.emplace_back(geoId, makeDigitizer<1u>(digiCfg));
+        digi = std::make_shared<Digitizer>(makeDigitizer<1u>(digiCfg));
         break;
       case 2u:
-        digitizerInput.emplace_back(geoId, makeDigitizer<2u>(digiCfg));
+        digi = std::make_shared<Digitizer>(makeDigitizer<2u>(digiCfg));
         break;
       case 3u:
-        digitizerInput.emplace_back(geoId, makeDigitizer<3u>(digiCfg));
+        digi = std::make_shared<Digitizer>(makeDigitizer<3u>(digiCfg));
         break;
       case 4u:
-        digitizerInput.emplace_back(geoId, makeDigitizer<4u>(digiCfg));
+        digi = std::make_shared<Digitizer>(makeDigitizer<4u>(digiCfg));
         break;
       default:
         throw std::invalid_argument("Unsupported smearer size");
     }
+    configToDesign[&digiCfg] =
+        std::make_shared<DigitizationDesign>(std::move(digi));
   }
 
-  m_digitizers = Acts::GeometryHierarchyMap<Digitizer>(digitizerInput);
-
-  // Attach a DigitizationDesign to each surface that has a digitizer
+  // Attach shared design to each surface
   for (const auto& [geoId, surfacePtr] : m_cfg.surfaceByIdentifier) {
-    auto digitizerItr = m_digitizers.find(geoId);
-    if (digitizerItr == m_digitizers.end()) {
+    auto cfgItr = m_cfg.digitizationConfigs.find(geoId);
+    if (cfgItr == m_cfg.digitizationConfigs.end()) {
       continue;
     }
-    auto design = std::make_shared<DigitizationDesign>(&(*digitizerItr));
-    const_cast<Acts::Surface*>(surfacePtr)->assignDesign(std::move(design));
+    auto designIt = configToDesign.find(&(*cfgItr));
+    if (designIt == configToDesign.end()) {
+      continue;
+    }
+    const_cast<Acts::Surface*>(surfacePtr)->assignDesign(designIt->second);
   }
 }
 

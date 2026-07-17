@@ -147,7 +147,7 @@ class DigitizationAlgorithm final : public IAlgorithm {
   /// Configuration of the Algorithm
   Config m_cfg;
   /// Digitizers within geometry hierarchy
-  Acts::GeometryHierarchyMap<Digitizer> m_digitizers;
+  // Acts::GeometryHierarchyMap<Digitizer> m_digitizers;
   /// Geometric digitizer
   ActsFatras::Channelizer m_channelizer;
 

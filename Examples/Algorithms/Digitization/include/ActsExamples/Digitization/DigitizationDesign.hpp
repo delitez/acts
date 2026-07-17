@@ -21,7 +21,8 @@ namespace ActsExamples {
 
 class DigitizationDesign final : public Acts::IDesign {
  public:
-  explicit DigitizationDesign(const DigitizationAlgorithm::Digitizer* digitizer)
+  explicit DigitizationDesign(
+      std::shared_ptr<const DigitizationAlgorithm::Digitizer> digitizer)
       : m_digitizer(digitizer) {}
 
   const DigitizationAlgorithm::Digitizer& digitizer() const {
@@ -31,7 +32,7 @@ class DigitizationDesign final : public Acts::IDesign {
   std::string_view name() const override { return "DigitizationDesign"; }
 
  private:
-  const DigitizationAlgorithm::Digitizer* m_digitizer;
+  std::shared_ptr<const DigitizationAlgorithm::Digitizer> m_digitizer;
 };
 
 }  // namespace ActsExamples
