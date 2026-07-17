@@ -11,6 +11,7 @@
 #include "ActsExamples/Io/Root/RootAthenaDumpWriter.hpp"
 #include "ActsExamples/Io/Root/RootAthenaNTupleReader.hpp"
 #include "ActsExamples/Io/Root/RootBFieldWriter.hpp"
+#include "ActsExamples/Io/Root/RootFileHasher.hpp"
 #include "ActsExamples/Io/Root/RootMaterialTrackReader.hpp"
 #include "ActsExamples/Io/Root/RootMaterialTrackWriter.hpp"
 #include "ActsExamples/Io/Root/RootMaterialWriter.hpp"
@@ -26,6 +27,7 @@
 #include "ActsExamples/Io/Root/RootSeedWriter.hpp"
 #include "ActsExamples/Io/Root/RootSimHitReader.hpp"
 #include "ActsExamples/Io/Root/RootSimHitWriter.hpp"
+#include "ActsExamples/Io/Root/RootSpacePointPerformanceWriter.hpp"
 #include "ActsExamples/Io/Root/RootSpacePointWriter.hpp"
 #include "ActsExamples/Io/Root/RootTrackFinderNTupleWriter.hpp"
 #include "ActsExamples/Io/Root/RootTrackFinderPerformanceWriter.hpp"
@@ -40,6 +42,8 @@
 #include "ActsExamples/Root/MuonVisualization.hpp"
 #include "ActsExamples/Root/ScalingCalibrator.hpp"
 #include "ActsPython/Utilities/Macros.hpp"
+
+#include <filesystem>
 
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
@@ -252,7 +256,15 @@ PYBIND11_MODULE(ActsExamplesPythonBindingsRoot, root) {
 
     ACTS_PYTHON_DECLARE_WRITER(
         RootSpacePointWriter, root, "RootSpacePointWriter", inputSpacePoints,
-        inputMeasurementParticlesMap, filePath, fileMode, treeName);
+        inputSimHits, inputMeasurementParticlesMap, inputMeasurementSimHitsMap,
+        trackingGeometry, filePath, fileMode, treeName);
+
+    ACTS_PYTHON_DECLARE_WRITER(
+        RootSpacePointPerformanceWriter, root,
+        "RootSpacePointPerformanceWriter", inputSpacePoints, inputParticles,
+        inputMeasurements, inputSimHits, inputMeasurementSimHitsMap,
+        inputMeasurementParticlesMap, trackingGeometry, stripGeometrySelection,
+        filePath, fileMode, treeName, zAxis, rAxis, etaAxis, phiAxis);
 
     ACTS_PYTHON_DECLARE_WRITER(
         RootAthenaDumpWriter, root, "RootAthenaDumpWriter", inputParticles,
@@ -327,5 +339,16 @@ PYBIND11_MODULE(ActsExamplesPythonBindingsRoot, root) {
           const MuonSegmentContainer&, const Acts::Logger&)>(
           visualizeMuonHoughMaxima);
     });
+  }
+
+  // Content hashing
+  {
+    root.def(
+        "hashRootFile", &ActsExamples::hashRootFile, "path"_a,
+        "orderInvariant"_a = true,
+        "Compute a hash of the numeric content of a ROOT file. Deterministic, "
+        "sensitive to content changes, and (by default) invariant under "
+        "reordering of tree entries. Not byte-compatible with the Python "
+        "hash_root helper.");
   }
 }
