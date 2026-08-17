@@ -191,7 +191,7 @@ if __name__ == "__main__":
     # Load material map
 
     oddMaterialMap = geoDir / "data/odd-material-maps.root"
-    oddDigiConfig = geoDir / "config/odd-digi-smearing-config.json"
+    oddDigiConfig = geoDir / "config/odd-digi-geometric-config.json"
 
     oddSeedingSel = geoDir / "config/odd-seeding-config.json"
     oddMaterialDeco = acts.IMaterialDecorator.fromFile(oddMaterialMap)
@@ -209,24 +209,3 @@ if __name__ == "__main__":
         # inputHitsPath=args.edm4hep,
         args=args,
     ).run()
-
-    # field = acts.SolenoidBField(
-    #     radius=1200 * u.mm,
-    #     length=6000 * u.mm,
-    #     bMagCenter=3 * u.T,
-    #     nCoils=1194,
-    # )
-
-    # solenoid = acts.SolenoidBField(
-    #     radius=1200 * u.mm,
-    #     length=6000 * u.mm,
-    #     bMagCenter=3 * u.T,
-    #     nCoils=1194,
-    # )
-
-    # field = acts.solenoidFieldMap(
-    #     rlim=(0, 1200 * u.mm),
-    #     zlim=(-5000 * u.mm, 5000 * u.mm),
-    #     nbins=(50, 50),
-    #     field=solenoid,
-    # )

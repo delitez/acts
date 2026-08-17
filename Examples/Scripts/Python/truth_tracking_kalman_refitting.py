@@ -191,7 +191,7 @@ if __name__ == "__main__":
     # Load material map
 
     oddMaterialMap = geoDir / "data/odd-material-maps.root"
-    oddDigiConfig = geoDir / "config/odd-digi-smearing-config.json"
+    oddDigiConfig = geoDir / "config/odd-digi-geometric-config.json"
 
     oddSeedingSel = geoDir / "config/odd-seeding-config.json"
     oddMaterialDeco = acts.IMaterialDecorator.fromFile(oddMaterialMap)

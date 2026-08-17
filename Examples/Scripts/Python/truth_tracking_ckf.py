@@ -71,7 +71,7 @@ def runTruthTrackingCKF(
     if s is None:
         s = acts.examples.Sequencer(
             events=200,
-            numThreads=-1,
+            numThreads=-1 if not args.fullsim else 1,
             logLevel=acts.logging.INFO,
         )
 
@@ -423,7 +423,9 @@ if "__main__" == __name__:
 
     # Load material map
     oddMaterialMap = geoDir / "data/odd-material-maps.root"
-    oddDigiConfig = geoDir / "config/odd-digi-smearing-config.json"
+    oddDigiConfig = geoDir / "config/odd-digi-geometric-config.json"
+    # oddDigiConfig = geoDir / "config/odd-digi-smearing-config.json"
+    ## use geometric digitization config instead smeared!!
 
     oddSeedingSel = geoDir / "config/odd-seeding-config.json"
     oddMaterialDeco = acts.IMaterialDecorator.fromFile(oddMaterialMap)
