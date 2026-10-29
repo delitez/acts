@@ -1,9 +1,10 @@
-/** TRACCC library, part of the ACTS project (R&D line)
- *
- * (c) 2025 CERN for the benefit of the ACTS project
- *
- * Mozilla Public License Version 2.0
- */
+// This file is part of the ACTS project.
+//
+// Copyright (C) 2016 CERN for the benefit of the ACTS project
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 
@@ -16,7 +17,6 @@
 namespace traccc {
 
 // binTables contains pairs of linked layer-eta bins
-// the layerInfo should really be calculated from the geoIDBinning
 // GeoIDBinning pair is detray geo ID and bin index (corresponding to the
 // layers in layerInfo) minPt in MeV
 bool gbts_seedfinder_config::setLinkingScheme(

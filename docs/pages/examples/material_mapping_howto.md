@@ -66,15 +66,13 @@ python Examples/Scripts/Python/geometry.py
 
 This writes `geometry-map.json` in the current directory (among other outputs).
 The relevant part is in `runGeometry()` in
-`Examples/Scripts/Python/geometry.py`, which configures a
-`MaterialMapJsonConverter` and a `JsonMaterialWriter`.
+`Examples/Scripts/Python/geometry.py`, which extracts assignments with
+@ref Acts::TrackingGeometryMaterial::fromGeometry and writes them using
+@ref Acts::TrackingGeometryMaterialJsonConverter::toFile.
 
 > [!important]
-> The converter must be configured with `processNonMaterial=True`. Surfaces that
-> do not already carry material are otherwise skipped entirely
-> (`Plugins/Json/src/MaterialMapJsonConverter.cpp:383`), so they never appear in
-> the dump and you have nothing to switch on. `geometry.py` already sets this;
-> if you write your own dumping script, do not omit it.
+> Use `includeNonMaterial=True` when extracting assignments to include deferred
+> proto grids for surfaces without material. `geometry.py` already does this.
 
 Point the script at your own detector by replacing the `getOpenDataDetector()`
 call at the bottom of the file.
@@ -135,7 +133,7 @@ marks up that child's volume faces as it is connected:
 The two-axis form of @ref Acts::MaterialDesignatorBlueprintNode::configureFace
 attaches a @ref Acts::ProtoGridSurfaceMaterial — a binning specification with no
 content, which is exactly what the Gen1 JSON route produces via
-`ProtoSurfaceMaterial`. It is the direct equivalent of setting
+@ref Acts::ProtoSurfaceMaterial. It is the direct equivalent of setting
 `"mapMaterial": true` plus a bin count, and it is what you want if you intend to
 run the mapping.
 
@@ -147,7 +145,7 @@ That assigns real material immediately, so there is nothing to map — useful fo
 a beam pipe or a support tube whose material you already know. `GenericDetector`
 uses this throughout (`Examples/Detectors/GenericDetector/src/GenericDetector.cpp`).
 
-Both snippets are taken from `docs/examples/material_designation.cpp`, which is
+These snippets are taken from `docs/examples/material_designation.cpp`, which is
 compiled as part of the `docs-examples` target, so they cannot drift from the
 API.
 
@@ -182,7 +180,7 @@ Things to know before you use it:
 > Blueprint-built geometry ignores material decorators.
 > @ref Acts::Blueprint::construct passes a null decorator to the
 > @ref Acts::TrackingGeometry constructor, so the `--matconfig` /
-> `IMaterialDecorator` route in steps 1 and 3 has no effect on a Gen3 geometry.
+> @ref Acts::IMaterialDecorator route in steps 1 and 3 has no effect on a Gen3 geometry.
 > Concretely, `getOpenDataDetector(gen3=True)` builds its decorator and then
 > drops it (`Python/Examples/python/odd.py`), and the Gen3 `OpenDataDetector`
 > config has no `materialDecorator` field at all. Designating in the blueprint
@@ -191,9 +189,67 @@ Things to know before you use it:
 Once construction is done the two generations converge completely. The
 designated material sits on ordinary surfaces, so `hasMaterial()` is true,
 `trackingGeometry.extractMaterialSurfaces()` collects them, and
-@ref Acts::BinnedSurfaceMaterialAccumulator consumes `ProtoGridSurfaceMaterial`
-alongside `ProtoSurfaceMaterial`. Steps 2 to 5 below are unchanged — just omit
+@ref Acts::BinnedSurfaceMaterialAccumulator consumes @ref Acts::ProtoGridSurfaceMaterial
+alongside @ref Acts::ProtoSurfaceMaterial. Steps 2 to 5 below are unchanged — just omit
 `--matconfig` in step 3, since the geometry already carries the designation.
+
+@anchor material_mapping_stable_keys
+#### Stable surface assignment keys
+
+The @ref Acts::AxisSpec overloads of
+@ref Acts::MaterialDesignatorBlueprintNode::configureFace accept an optional
+trailing key for proto materials. Existing calls without a key continue to use geometry identifiers:
+
+@snippet{trimleft} examples/material_designation.cpp Designate Keyed Material
+
+In Python the argument is named `materialKey`. Keys identify individual surface
+assignments, not material compositions. They are case-sensitive, must be
+nonempty when supplied, and must be unique among the material surfaces of a
+geometry. Choose names independent of traversal order and generated geometry
+IDs. Repeated configuration of the same proto-designator face is an error.
+
+Proto materials carry the key. Mapping and loading discover it by downcasting
+the surface's @ref Acts::ISurfaceMaterial; @ref Acts::Surface has no key API or
+storage. Standalone proto-material and surface serialization preserve the key
+while the placeholder is attached. Loading replaces the placeholder with real
+material and consumes this identity. To apply another keyed map, rebuild the
+geometry with its designators first. Write or combine keyed maps using
+@ref Acts::TrackingGeometryMaterial, rather than reconstructing keys from
+decorated surfaces.
+
+@ref Acts::BinnedSurfaceMaterialAccumulator validates identities before mapping:
+it rejects duplicate keys, distinct surfaces with the same geometry ID, and
+merged-material markers. Repeated visits to the same shared surface are allowed.
+The accumulator finalizes keyed assignments separately from the
+legacy ID-indexed assignments in @ref Acts::TrackingGeometryMaterial::keyedSurfaces.
+@ref Acts::MaterialMapper::finalizeMaps returns those maps. Registry state and
+identity checks remain internal to the accumulator implementation.
+
+For a completed geometry, use
+@ref Acts::TrackingGeometryMaterial::apply "TrackingGeometryMaterial::apply"
+(`maps.apply(geometry)` in Python), or the overload taking a span of mutable
+surfaces. These format-independent Core operations validate the selected
+geometry's key/ID uniqueness and resolve all assignments before updating
+surfaces. The individual-surface
+@ref Acts::TrackingGeometryMaterial::apply(Acts::Surface&)const "apply(surface)"
+overload performs lookup and material assignment but cannot check uniqueness across other surfaces.
+
+@ref Acts::TrackingGeometryMaterialJsonConverter reads versioned JSON/CBOR
+into these maps. Call `converter.fromFile(path).apply(geometry)` in C++ or Python
+to apply them to a completed geometry. Python also provides
+`acts.IMaterialDecorator.fromFile(path)` for construction-time decoration.
+The legacy JSON decorator remains available for legacy files.
+
+- Applying a keyed map to Gen1 geometry is an error. Stable keys require Gen3
+  material designators.
+- Keyed targets require a matching keyed entry. There is no fallback to a
+  geometry ID when a key is missing.
+- Unkeyed targets use geometry-ID assignments.
+- Unused file keys are allowed, so a larger or combined map can decorate a
+  subset geometry.
+- An explicit vacuum payload is a valid assignment; an absent payload is not.
+
+For the serialized representation, see @ref material_map_json_format.
 
 ## Step 2: record the material with Geant4
 
@@ -208,6 +264,44 @@ is a million tracks; `--eta-range` and `--phi-range` restrict the solid angle.
 This step is independent of your surface choices — you only need to redo it if
 the detailed geometry changes, not when you retune binning. It is by far the
 slowest step, so record generously once and reuse the file.
+
+### Recording a DD4hep detector with ddsim
+
+For a DD4hep detector, the recording can also run directly in `ddsim`, on the
+same Geant4 geometry DDG4 builds for the full simulation. Two DDG4 actions in
+the `ActsPluginDD4hepGeant4` library do this: the `ActsMaterialRecorder`
+stepping action collects the material tracks, and the `ActsMaterialTrackWriter`
+event action writes them in the same file format as above. The library is built
+when both the DD4hep and the Geant4 plugins are enabled and DD4hep comes with
+DDG4. With it on `LD_LIBRARY_PATH`, e.g. after sourcing `this_acts.sh`:
+
+```console
+ddsim --steeringFile Examples/Scripts/Python/material_recording_ddsim.py \
+      --compactFile mydet.xml -N 1000 --outputFile mydet_geant4.root
+```
+
+The steering file shoots 1000 geantinos per event, uniform in
+\f$|\eta| < 4\f$; the gun can be adjusted on the command line, e.g. with
+`--gun.multiplicity`, `--gun.etaMin` and `--gun.etaMax`. With
+`--numberOfThreads`, which `ddsim` offers from DD4hep 1.38, all threads write
+into the single output file. Every simulated track gets an entry, also if it
+crosses no recorded material.
+
+The mapping assigns every recorded step to a surface, so material beyond the
+outermost material surfaces, e.g. in the calorimeters, ends up on them. To
+avoid this, limit the recording to a cylinder around the beam axis, e.g. at the
+calorimeter face, with `--outputConfig.recordingMaxR`,
+`--outputConfig.recordingMinZ` and `--outputConfig.recordingMaxZ` in mm. The z
+range does not need to be symmetric, and a bound that is not given does not
+limit the recording. Tracks are stopped where they leave the cylinder, and the
+step that crosses its boundary is cut there, which also makes the recording
+faster.
+
+To compare two recordings track by track, they need the same geantinos. For
+example, add a `HepMC3Writer` for the generated event to
+`material_recording.py`, and replay the resulting HepMC3 file in `ddsim` with
+`--inputFiles` instead of the particle gun, by setting `SIM.enableGun = False`
+in a copy of the steering file.
 
 ## Step 3: run the mapping
 
@@ -301,20 +395,18 @@ Rules of thumb:
 ## Limitations you should know about
 
 These are properties of the current navigation-less mapper, not of your setup.
-Both are cases where the legacy propagation-based mapper did more.
 
 **Volume material is not produced.** @ref Acts::MaterialMapper retrieves volume
 assignments from the assignment finder and then discards them; only surface
 material is accumulated, and `finalizeMaps()` returns an empty volume map
-(`Core/src/Material/MaterialMapper.cpp`). If you need volume material, the
-deprecated @ref Acts::VolumeMaterialMapper is currently the only path.
+(`Core/src/Material/MaterialMapper.cpp`). ACTS currently has no way to map
+volume material.
 
 **`mappingType` is not honoured.** The `"mappingType"` key round-trips through
 the JSON and is stored on the material, but the current assignment does plain
 nearest-intersection matching — its own comment says *"no pre/post matching"*
 (`Core/src/Material/MaterialInteractionAssignment.cpp`). `PreMapping`,
-`PostMapping` and `Sensor` are only interpreted by the deprecated
-@ref Acts::SurfaceMaterialMapper. To steer assignment today, use the
+`PostMapping` and `Sensor` have no effect. To steer assignment, use the
 `globalVetos`, `localVetos` and `reAssignments` hooks in
 @ref Acts::MaterialInteractionAssignment::Options.
 
